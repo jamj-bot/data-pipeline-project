@@ -4,7 +4,7 @@ from data_pipeline.core.filter import DataFilter
 
 class DeduplicateFilter(DataFilter):
     """
-    Filtro encargado de eliminar filas diplicasas.
+    Filtro encargado de eliminar filas duplicadas.
     """
 
     def process(self, data: pd.DataFrame) -> pd.DataFrame:

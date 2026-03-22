@@ -1,51 +1,101 @@
-# Nombre del Proyecto
+# Data Pipeline Project
 
-Data Pipeline Project
+Arquitectura robusta de pipeline de datos basada en el patrón **Pipes & Filters**, 
+diseñada para procesar, limpiar y transformar datos en Python.
 
-## Descripción
-
-Proyecto básico pero conceptualmente robusto para una aplicación de análisis de datos que
-es una base sólida para posteriormente poder construir aplicaciones más complejas y avanzadas.
-Se enfoca en:
-
-    1. Arquitectura Pipers & Filters
-    2. Separación de responsabilidades
-    3. POO básica pero bien implementada
-    4. Tipado
-    5. Tests básicos
-    6. Estructura de carpetas limpia
-
-
-    data_pipeline_project/
-    ├── data/
-    │   └── raw/
-    │       └── sales.csv
-    │
-    ├── src/
-    │   └── data_pipeline/
-    │       ├── core/
-    │       │   ├── filter.py
-    │       │   └── pipeline.py
-    │       │
-    │       ├── filters/
-    │       │   ├── load_csv.py
-    │       │   ├── clean_data.py
-    │       │   └── aggregate_sales.py
-    │       │
-    │       └── __init__.py
-    │
-    ├── tests/
-    │   └── test_clean_data.py
-    │
-    ├── scripts/
-    │   └── run_pipeline.py
-    │
-    ├── pyproject.toml
-    ├── requirements.txt
-    └── README.md
-
+## Tabla de contenidos
+- [Características](#características)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Uso](#uso)
+- [Uso](#arquitectura)
+- [Hoja de ruta](#hoja-de-ruta)
+- [Contribución y testing](#contribucion-y-testing)
 
 ## Características
+
+**Implementado:**
+- Ingestion: LoadCSVFilter, ChunkedCSVFilter
+- Schema Validation: validación de columnas, tipos y valores permitidos
+- Cleaning: deduplicación, manejo de valores faltantes
+- Type Conversion: soporte para datetime, int nullable, timedelta
+- Data Quality Metrics: cálculo de proporción de nulls, estadísticas
+
+**En desarrollo / Roadmap:**
+- Advanced validation (rangos, integridad referencial)
+- Feature Engineering
+- Enrichment (lookups, joins externos)
+- Aggregation
+- Persistence (Parquet, bases de datos)
+
+## Estructura del proyecto
+data_pipeline_project/ 
+├── data/ 
+│ └── raw/ # Datos de entrada 
+│   └── sales.csv 
+├── src/data_pipeline/ 
+│ ├── core/ 
+│ │ ├── filter.py # Clase base Filter 
+│ │ └── pipeline.py # Orquestador del pipeline 
+│ └── filters/ # Filtros específicos 
+│   ├── load_csv.py 
+│   ├── clean_data.py 
+│   └── aggregate_sales.py 
+├── tests/ # Suite de tests 
+├── scripts/ 
+│ └── run_pipeline.py # Script de ejecución 
+└── pyproject.toml
+
+## Requisitos
+
+- Python 3.8+
+- pandas >= 1.0
+- pytest (para tests)
+
+*Ver `requirements.txt` para todas las dependencias*
+
+## Instalación
+
+1. Clonar el repositorio:
+bash
+git clone https://github.com/jamj-bot/data-pipeline-project.git
+cd data-pipeline-project
+
+2. Instalar dependencias:
+pip install -r requirements.txt
+
+3. (Opcional) Instalar en modo desarrollo:
+pip install -e .
+
+### **7. Uso / Ejemplo rápido**
+from src.data_pipeline.pipeline import Pipeline
+from src.data_pipeline.filters import LoadCSVFilter, CleanDataFilter
+
+pipeline = Pipeline()
+pipeline.add_filter(LoadCSVFilter('data/raw/sales.csv'))
+pipeline.add_filter(CleanDataFilter())
+result = pipeline.execute()
+
+### **8. Arquitectura del patrón Pipes & Filters**
+Este proyecto implementa el patrón Pipes & Filters:
+
+Filters: Cada componente es responsable de una única tarea
+Pipes: El Pipeline orquesta el flujo de datos entre filtros
+Ventajas:
+Modularidad y testabilidad
+Fácil de extender con nuevos filtros
+Separación clara de responsabilidades
+
+### **9. Hoja de ruta / Roadmap**
+Agregar OutlierRemovalFilter (IQR, Z-score)
+Implementar FeatureEngineeringFilter
+Agregar persistencia en Parquet
+Validación de rangos y integridad referencial
+Metrics de drift detection
+
+### **10. Contribución y testing**
+pytest tests/
 
 - 1. INGESTION: cargar datos desde fuentes externas.
 
@@ -198,23 +248,4 @@ Se enfoca en:
         * DatabaseWriterFilter
 
     - Estado: PARCIAL
-
-## Requisitos
-
-- Python 3.8+
-- pandas
-- (otras dependencias)
-
-## Instalación
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/tu-usuario/tu-proyecto.git
-
-# Entrar al directorio
-cd tu-proyecto
-
-# Instalar dependencias
-pip install -r requirements.txt
-
 
