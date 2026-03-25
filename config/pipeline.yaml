@@ -87,6 +87,7 @@ pipeline:
 
     - name: FilterByDateRange
       params:
+        field_date: FL_DATE
         start_date: "2006-01-01"
         end_date: "2006-01-01"
 
