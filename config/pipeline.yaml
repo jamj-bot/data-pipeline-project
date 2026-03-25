@@ -89,6 +89,7 @@ pipeline:
       params:
         start_date: "2006-01-01"
         end_date: "2006-01-01"
+        field_date: FL_DATE
 
     - name: SaveCSVFilter
       params:

@@ -4,8 +4,8 @@ import pytest
 from data_pipeline.filters.filter_by_date import FilterByDateRange
 
 def test_filter_by_date_range_filters_correctly():
-    df = pd.DataFrame({
-        "date": [
+    df = pd.DataFrame({      
+        "FL_DATE": [
             "2024-01-01", "2024-01-10",
             "2024-01-20", "2024-01-30",
         ],
