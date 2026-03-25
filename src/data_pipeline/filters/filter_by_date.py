@@ -4,7 +4,7 @@ from data_pipeline.core.filter import DataFilter
 
 class FilterByDateRange(DataFilter):
     """ Filtro que selecciona registros dentro de un rango de fechas."""
-    def __init__(self, field_date: str, start_date: str, end_date: str) -> None:
+    def __init__(self, start_date: str, end_date: str, field_date: str = "FL_DATE") -> None:
         self._field_date = field_date
         self._start_date = pd.to_datetime(start_date)
         self._end_date = pd.to_datetime(end_date)
@@ -20,7 +20,8 @@ class FilterByDateRange(DataFilter):
             raise ValueError(f"El DataFrame debe tener una columna llamada '{self._field_date}'")
 
         df = data.copy() # Copia defensiva
-
+        # Convierte la columna "date" a datetime64[ns]
+        df[self._field_date] = pd.to_datetime(df[self._field_date])
         # Crea máscara booleana que selecciona las filas que cumplen con ambas condiciones
         mask = (df[self._field_date] >= self._start_date) & (df[self._field_date] <= self._end_date)
 
