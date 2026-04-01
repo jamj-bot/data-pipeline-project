@@ -1,4 +1,5 @@
 import pandas as pd
+from data_pipeline.validation.result import ValidationResult
 from pandas.api.types import is_dtype_equal
 from data_pipeline.validation.rules.base import ValidationRule, register_rule
 
@@ -37,7 +38,8 @@ class ColumnTypesRule(ValidationRule):
         super().__init__(severity)
         self._schema = schema
 
-    def validate(self, data: pd.DataFrame) -> None:
+    def validate(self, data: pd.DataFrame):
+
         errors: list[str] = []
 
         for column, declared_type in self._schema.items():
@@ -49,8 +51,11 @@ class ColumnTypesRule(ValidationRule):
             expected_dtype = self._TYPE_MAPPING.get(declared_type)
 
             if expected_dtype is None:
-                raise ValueError(
-                    f"Tipo no soportado en column_types: '{declared_type}'"
+                return ValidationResult(
+                    rule_name=self.__class__.__name__,
+                    is_valid=False,
+                    errors=[f"Tipo no soportado en column_types: '{declared_type}'"],
+                    severity=self._severity
                 )
 
             actual_dtype = data[column].dtype
@@ -62,4 +67,16 @@ class ColumnTypesRule(ValidationRule):
                 )
 
         if errors:
-            raise ValueError(errors)
+            return ValidationResult(
+                rule_name=self.__class__.__name__,
+                is_valid=False,
+                errors=errors,
+                severity=self._severity
+            )
+
+        return ValidationResult(
+            rule_name=self.__class__.__name__,
+            is_valid=True,
+            errors=[],
+            severity=self._severity
+        )

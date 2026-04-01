@@ -1,4 +1,5 @@
 import pandas as pd
+from data_pipeline.validation.result import ValidationResult
 from data_pipeline.validation.rules.base import ValidationRule, register_rule
 
 @register_rule("required_columns")
@@ -8,9 +9,23 @@ class RequiredColumnsRule(ValidationRule):
         super().__init__(severity)
         self._columns = columns
 
-    def validate(self, data: pd.DataFrame) -> None:
+    def validate(self, data: pd.DataFrame):
 
         missing = set(self._columns) - set(data.columns)
 
         if missing:
-            raise ValueError(f"Faltan columnas requeridas: {missing}")
+            return ValidationResult(
+                rule_name=self.__class__.__name__,
+                is_valid=False,
+                errors=[f"Faltan columnas requeridas: {missing}"],
+                severity=self._severity
+            )
+
+        return ValidationResult(
+            rule_name=self.__class__.__name__,
+            is_valid=True,
+            errors=[],
+            severity=self._severity
+        )
+
+
