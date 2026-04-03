@@ -1,6 +1,7 @@
 import pandas as pd
 from data_pipeline.validation.result import ValidationResult
 from data_pipeline.validation.rules.rule_factory import create_rules
+from data_pipeline.validation.validation_report import ValidationReport
 
 
 class RuleEngine:
@@ -8,28 +9,14 @@ class RuleEngine:
     def __init__(self, rules_config: list[dict]):
         self._rules = create_rules(rules_config)
 
-    def run(self, data: pd.DataFrame) -> None:
+    def run(self, data: pd.DataFrame) -> ValidationReport:
+
+        report = ValidationReport()
 
         for rule in self._rules:
-            try:
-                result = rule.validate(data)
 
-                # NUEVO: soporte para ValidationResult
-                if isinstance(result, ValidationResult):
+            result: ValidationResult = rule.validate(data)
 
-                    if not result.is_valid:
-                        if result.severity == "warning":
-                            print(f"WARNING [{result.rule_name}]: {result.errors}")
-                        else:
-                            raise ValueError(
-                                f"ERROR [{result.rule_name}]: {result.errors}"
-                            )
+            report.add(result)
 
-            except Exception as e:
-                # comportamiento legacy (no se rompe nada)
-                if getattr(rule, "_severity", "error") == "warning":
-                    print(f"WARNING: {e}")
-                else:
-                    raise
-
-
+        return report

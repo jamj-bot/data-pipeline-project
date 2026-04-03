@@ -1,4 +1,5 @@
 import pandas as pd
+from data_pipeline.validation.result import ValidationResult
 from data_pipeline.validation.rules.base import ValidationRule, register_rule
 
 
@@ -13,7 +14,7 @@ class AllowedValuesRule(ValidationRule):
         super().__init__(severity)
         self._schema = schema
 
-    def validate(self, data: pd.DataFrame) -> None:
+    def validate(self, data: pd.DataFrame):
 
         errors: list[str] = []
 
@@ -30,4 +31,16 @@ class AllowedValuesRule(ValidationRule):
                 )
 
         if errors:
-            raise ValueError(errors)
+            return ValidationResult(
+                rule_name=self.__class__.__name__,
+                is_valid=False,
+                errors=errors,
+                severity=self._severity
+            )
+
+        return ValidationResult(
+            rule_name=self.__class__.__name__,
+            is_valid=True,
+            errors=[],
+            severity=self._severity
+        )

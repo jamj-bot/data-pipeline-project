@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Type
-from typing import Optional
 from data_pipeline.validation.result import ValidationResult
 import pandas as pd
 
@@ -21,6 +20,6 @@ class ValidationRule(ABC):
         self._severity = severity
 
     @abstractmethod
-    def validate(self, data: pd.DataFrame) -> Optional[ValidationResult]:
+    def validate(self, data: pd.DataFrame) -> ValidationResult:
         pass
 
