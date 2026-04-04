@@ -14,9 +14,7 @@ class RuleEngine:
         report = ValidationReport()
 
         for rule in self._rules:
-
             result: ValidationResult = rule.validate(data)
-
             report.add(result)
 
         return report
