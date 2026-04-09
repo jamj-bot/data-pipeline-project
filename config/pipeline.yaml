@@ -74,6 +74,8 @@ pipeline:
           error: true
           warning: false
 
+        report_path: data/reports/validation_report.json
+
     # - name: BusinessValidationFilter
     #   params:
     #     rules:
