@@ -30,3 +30,24 @@ class ValidationReport:
             "errors": len(self.errors),
             "warnings": len(self.warnings),
         }
+
+    def to_dict(self) -> dict:
+        return {
+            "summary": self.summary(),
+            "errors": [
+                {
+                    "rule": e.rule_name,
+                    "messages": e.errors,
+                    "severity": e.severity,
+                }
+                for e in self.errors
+            ],
+            "warnings": [
+                {
+                    "rule": w.rule_name,
+                    "messages": w.errors,
+                    "severity": w.severity,
+                }
+                for w in self.warnings
+            ],
+        }

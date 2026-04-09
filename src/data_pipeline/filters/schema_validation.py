@@ -1,5 +1,7 @@
 import pandas as pd
 import logging
+import json
+from pathlib import Path
 from data_pipeline.core.filter import DataFilter
 from data_pipeline.validation.engine.engine import RuleEngine
 
@@ -9,10 +11,13 @@ class SchemaValidationFilter(DataFilter):
     def __init__(
         self,
         rules: list[dict],
-        fail_on: dict | None = None
+        fail_on: dict | None = None,
+        report_path: str | None = None
     ):
         self._engine = RuleEngine(rules)
         self._logger = logging.getLogger("DataPipeline")
+
+        self._report_path = report_path
 
         # Default behavior (backward compatibility)
         self._fail_on_error = True
@@ -35,6 +40,16 @@ class SchemaValidationFilter(DataFilter):
             self._logger.warning(
                 f"[{warning.rule_name}] {' | '.join(warning.errors)}"
             )
+
+        # Persist report
+        if self._report_path:
+            path = Path(self._report_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(path, "w") as f:
+                json.dump(report.to_dict(), f, indent=2)
+
+            self._logger.info(f"Validation report saved to {self._report_path}")
 
         # Fail on warnings (optional)
         if self._fail_on_warning and report.has_warnings():
