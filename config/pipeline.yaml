@@ -70,6 +70,10 @@ pipeline:
                 max: 100
             severity: warning
 
+        fail_on:
+          error: true
+          warning: false
+
     # - name: BusinessValidationFilter
     #   params:
     #     rules:
