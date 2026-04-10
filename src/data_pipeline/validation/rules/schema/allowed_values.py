@@ -5,10 +5,6 @@ from data_pipeline.validation.rules.base import ValidationRule, register_rule
 
 @register_rule("allowed_values")
 class AllowedValuesRule(ValidationRule):
-    """
-    Valida que los valores de una columna pertenezcan
-    a un conjunto permitido definido en el schema.
-    """
 
     def __init__(self, schema: dict[str, list], severity: str = "error") -> None:
         super().__init__(severity)
@@ -17,30 +13,35 @@ class AllowedValuesRule(ValidationRule):
     def validate(self, data: pd.DataFrame):
 
         errors: list[str] = []
+        invalid_indices: list[int] = []
 
         for column, allowed in self._schema.items():
 
             if column not in data.columns:
-                continue  # required_columns lo valida
+                continue
 
-            invalid_values = set(data[column].dropna().unique()) - set(allowed)
+            mask = ~data[column].isin(allowed) & data[column].notna()
 
-            if invalid_values:
+            if mask.any():
+                invalid_values = set(data.loc[mask, column].unique())
                 errors.append(
                     f"Columna '{column}' contiene valores no permitidos: {invalid_values}"
                 )
+                invalid_indices.extend(data[mask].index.tolist())
 
         if errors:
             return ValidationResult(
                 rule_name=self.__class__.__name__,
                 is_valid=False,
                 errors=errors,
-                severity=self._severity
+                severity=self._severity,
+                invalid_rows=invalid_indices
             )
 
         return ValidationResult(
             rule_name=self.__class__.__name__,
             is_valid=True,
             errors=[],
-            severity=self._severity
+            severity=self._severity,
+            invalid_rows=[]
         )

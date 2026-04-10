@@ -2,7 +2,7 @@ pipeline:
   filters:
     - name: LoadCSVFilter
       params:
-        file_path: data/raw/dataset.csv
+        file_path: data/raw/limited_dataset.csv
 
     - name: DataTypeConverterFilter
       params:
@@ -51,7 +51,7 @@ pipeline:
 
           - type: allowed_values
             schema:
-              STATUS: [ON_TIME, CANCELLED, DELAYED]
+              STATUS: [FINALIZADO, CANCELADO]
             severity: warning
 
           - type: value_range
@@ -74,6 +74,10 @@ pipeline:
           error: true
           warning: false
 
+        row_actions:
+          error: drop        # drop | keep | separate | fail
+          warning: keep
+
         report_path: data/reports/validation_report.json
 
     # - name: BusinessValidationFilter
@@ -94,7 +98,7 @@ pipeline:
     - name: FilterByDateRange
       params:
         start_date: "2006-01-01"
-        end_date: "2006-01-01"
+        end_date: "2009-01-01"
         field_date: FL_DATE
 
     - name: SaveCSVFilter

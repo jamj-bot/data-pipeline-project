@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Set
 from data_pipeline.validation.result import ValidationResult
 
 
@@ -23,6 +23,13 @@ class ValidationReport:
 
     def has_warnings(self) -> bool:
         return len(self.warnings) > 0
+
+    def invalid_rows(self, severity: str = "error") -> Set[int]:
+        rows = set()
+        for r in self.results:
+            if not r.is_valid and r.severity == severity and r.invalid_rows:
+                rows.update(r.invalid_rows)
+        return rows
 
     def summary(self) -> dict:
         return {
@@ -50,4 +57,8 @@ class ValidationReport:
                 }
                 for w in self.warnings
             ],
+            "row_level": {
+                "invalid_rows_error": list(self.invalid_rows("error")),
+                "invalid_rows_warning": list(self.invalid_rows("warning")),
+            },
         }

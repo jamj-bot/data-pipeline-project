@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 @dataclass
 class ValidationResult:
@@ -7,3 +7,4 @@ class ValidationResult:
     is_valid: bool
     errors: List[str]
     severity: str = "error"
+    invalid_rows: Optional[List[int]] = None

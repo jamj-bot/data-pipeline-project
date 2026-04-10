@@ -12,7 +12,8 @@ class SchemaValidationFilter(DataFilter):
         self,
         rules: list[dict],
         fail_on: dict | None = None,
-        report_path: str | None = None
+        report_path: str | None = None,
+        row_actions: dict | None = None
     ):
         self._engine = RuleEngine(rules)
         self._logger = logging.getLogger("DataPipeline")
@@ -26,6 +27,19 @@ class SchemaValidationFilter(DataFilter):
         if fail_on:
             self._fail_on_error = fail_on.get("error", True)
             self._fail_on_warning = fail_on.get("warning", False)
+
+        # Row-level actions
+        self._on_error_action = "fail"
+        self._on_warning_action = "keep"
+
+        if row_actions:
+            self._on_error_action = row_actions.get("error", "fail")
+            self._on_warning_action = row_actions.get("warning", "keep")
+
+    def _drop_rows(self, data: pd.DataFrame, rows: set[int]) -> pd.DataFrame:
+        if not rows:
+            return data
+        return data.drop(index=list(rows))
 
     def process(self, data: pd.DataFrame) -> pd.DataFrame:
 
@@ -51,7 +65,63 @@ class SchemaValidationFilter(DataFilter):
 
             self._logger.info(f"Validation report saved to {self._report_path}")
 
-        # Fail on warnings (optional)
+        # =========================
+        # ROW-LEVEL HANDLING 
+        # =========================
+
+        error_rows = report.invalid_rows("error")
+        warning_rows = report.invalid_rows("warning")
+
+        # Handle error rows
+        if error_rows:
+            if self._on_error_action == "drop":
+                data = self._drop_rows(data, error_rows)
+                self._logger.info(
+                    f"Dropped {len(error_rows)} rows due to validation errors"
+                )
+
+            elif self._on_error_action == "separate":
+                invalid_df = data.loc[list(error_rows)]
+                valid_df = self._drop_rows(data, error_rows)
+
+                self._logger.info(
+                    f"Separated {len(error_rows)} invalid rows (errors)"
+                )
+
+                # FUTURE: persist invalid_df
+                data = valid_df
+
+            elif self._on_error_action == "keep":
+                pass
+
+            elif self._on_error_action == "fail":
+                pass  # handled below
+
+        # Handle warning rows
+        if warning_rows:
+            if self._on_warning_action == "drop":
+                data = self._drop_rows(data, warning_rows)
+                self._logger.info(
+                    f"Dropped {len(warning_rows)} rows due to warnings"
+                )
+
+            elif self._on_warning_action == "separate":
+                invalid_df = data.loc[list(warning_rows)]
+                valid_df = self._drop_rows(data, warning_rows)
+
+                self._logger.info(
+                    f"Separated {len(warning_rows)} invalid rows (warnings)"
+                )
+
+                data = valid_df
+
+            elif self._on_warning_action == "keep":
+                pass
+
+        # =========================
+        # FAIL POLICIES
+        # =========================
+
         if self._fail_on_warning and report.has_warnings():
             warning_messages = [
                 f"[{w.rule_name}] {' | '.join(w.errors)}"
@@ -64,7 +134,6 @@ class SchemaValidationFilter(DataFilter):
 
             raise ValueError(" | ".join(warning_messages))
 
-        # Fail on errors (default behavior)
         if self._fail_on_error and report.has_errors():
 
             error_messages = [
