@@ -20,13 +20,15 @@ class SchemaValidationFilter(DataFilter):
 
         self._report_path = report_path
 
-        # Default behavior (backward compatibility)
-        self._fail_on_error = True
-        self._fail_on_warning = False
-
-        if fail_on:
-            self._fail_on_error = fail_on.get("error", True)
-            self._fail_on_warning = fail_on.get("warning", False)
+        # NEW: fail config (backward compatible)
+        self._fail_config = {
+            "error": self._parse_fail_config(
+                fail_on.get("error", True) if fail_on else True
+            ),
+            "warning": self._parse_fail_config(
+                fail_on.get("warning", False) if fail_on else False
+            )
+        }
 
         # Row-level actions
         self._on_error_action = "fail"
@@ -36,26 +38,79 @@ class SchemaValidationFilter(DataFilter):
             self._on_error_action = row_actions.get("error", "fail")
             self._on_warning_action = row_actions.get("warning", "keep")
 
+    def _parse_fail_config(self, value):
+        if isinstance(value, bool):
+            return {
+                "enabled": value,
+                "strategy": "pre"
+            }
+
+        return {
+            "enabled": True,
+            "strategy": value.get("strategy", "pre"),
+            "threshold": value.get("threshold")
+        }
+
     def _drop_rows(self, data: pd.DataFrame, rows: set[int]) -> pd.DataFrame:
         if not rows:
             return data
         return data.drop(index=list(rows))
 
+    def _should_fail_pre(self, report, severity):
+        config = self._fail_config[severity]
+
+        if not (config["enabled"] and config["strategy"] == "pre"):
+            return False
+
+        return report.has_errors() if severity == "error" else report.has_warnings()
+
+    def _should_fail_post(self, data, severity):
+        config = self._fail_config[severity]
+
+        if not (config["enabled"] and config["strategy"] == "post"):
+            return False
+
+        new_report = self._engine.run(data)
+
+        return (
+            new_report.has_errors()
+            if severity == "error"
+            else new_report.has_warnings()
+        )
+
+    def _should_fail_threshold(self, original_count, invalid_rows, severity):
+        config = self._fail_config[severity]
+
+        if config["strategy"] != "threshold":
+            return False
+
+        threshold = config.get("threshold", 0)
+        ratio = len(invalid_rows) / max(original_count, 1)
+
+        self._logger.info(
+            f"[{severity}] invalid ratio: {ratio:.4f} (threshold={threshold})"
+        )
+
+        return ratio > threshold
+
     def process(self, data: pd.DataFrame) -> pd.DataFrame:
+
+        original_row_count = len(data)
 
         report = self._engine.run(data)
 
-        # Summary
+        # =========================
+        # LOGGING (UNCHANGED)
+        # =========================
+
         summary = report.summary()
         self._logger.info(f"Validation summary: {summary}")
 
-        # Warnings
         for warning in report.warnings:
             self._logger.warning(
                 f"[{warning.rule_name}] {' | '.join(warning.errors)}"
             )
 
-        # Persist report
         if self._report_path:
             path = Path(self._report_path)
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,13 +121,22 @@ class SchemaValidationFilter(DataFilter):
             self._logger.info(f"Validation report saved to {self._report_path}")
 
         # =========================
-        # ROW-LEVEL HANDLING 
+        # PRE FAIL (NEW)
+        # =========================
+
+        if self._should_fail_pre(report, "warning"):
+            raise ValueError("Validation failed (pre warning)")
+
+        if self._should_fail_pre(report, "error"):
+            raise ValueError("Validation failed (pre error)")
+
+        # =========================
+        # ROW-LEVEL HANDLING
         # =========================
 
         error_rows = report.invalid_rows("error")
         warning_rows = report.invalid_rows("warning")
 
-        # Handle error rows
         if error_rows:
             if self._on_error_action == "drop":
                 data = self._drop_rows(data, error_rows)
@@ -82,22 +146,12 @@ class SchemaValidationFilter(DataFilter):
 
             elif self._on_error_action == "separate":
                 invalid_df = data.loc[list(error_rows)]
-                valid_df = self._drop_rows(data, error_rows)
+                data = self._drop_rows(data, error_rows)
 
                 self._logger.info(
                     f"Separated {len(error_rows)} invalid rows (errors)"
                 )
 
-                # FUTURE: persist invalid_df
-                data = valid_df
-
-            elif self._on_error_action == "keep":
-                pass
-
-            elif self._on_error_action == "fail":
-                pass  # handled below
-
-        # Handle warning rows
         if warning_rows:
             if self._on_warning_action == "drop":
                 data = self._drop_rows(data, warning_rows)
@@ -107,44 +161,30 @@ class SchemaValidationFilter(DataFilter):
 
             elif self._on_warning_action == "separate":
                 invalid_df = data.loc[list(warning_rows)]
-                valid_df = self._drop_rows(data, warning_rows)
+                data = self._drop_rows(data, warning_rows)
 
                 self._logger.info(
                     f"Separated {len(warning_rows)} invalid rows (warnings)"
                 )
 
-                data = valid_df
-
-            elif self._on_warning_action == "keep":
-                pass
-
         # =========================
-        # FAIL POLICIES
+        # POST FAIL (NEW)
         # =========================
 
-        if self._fail_on_warning and report.has_warnings():
-            warning_messages = [
-                f"[{w.rule_name}] {' | '.join(w.errors)}"
-                for w in report.warnings
-            ]
+        if self._should_fail_post(data, "warning"):
+            raise ValueError("Validation failed (post warning)")
 
-            self._logger.error(
-                "Validation failed (warnings): " + " | ".join(warning_messages)
-            )
+        if self._should_fail_post(data, "error"):
+            raise ValueError("Validation failed (post error)")
 
-            raise ValueError(" | ".join(warning_messages))
+        # =========================
+        # THRESHOLD FAIL (NEW)
+        # =========================
 
-        if self._fail_on_error and report.has_errors():
+        if self._should_fail_threshold(original_row_count, error_rows, "error"):
+            raise ValueError("Validation failed (threshold error)")
 
-            error_messages = [
-                f"[{e.rule_name}] {' | '.join(e.errors)}"
-                for e in report.errors
-            ]
-
-            self._logger.error(
-                "Validation failed (errors): " + " | ".join(error_messages)
-            )
-
-            raise ValueError(" | ".join(error_messages))
+        if self._should_fail_threshold(original_row_count, warning_rows, "warning"):
+            raise ValueError("Validation failed (threshold warning)")
 
         return data

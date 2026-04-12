@@ -31,12 +31,15 @@ pipeline:
             dtype: timedelta
             unit: hours
 
+          STATUS:
+            dtype: category
+
     - name: SchemaValidationFilter
       params:
         rules:
           - type: required_columns
-            columns: [FL_DATE, DEP_DELAY, STATUS, INFOBAE, ARR_DELAY, AIR_TIME]
-            severity: warning #error
+            columns: [FL_DATE, DEP_DELAY, PRICE, ARR_DELAY, AIR_TIME, STATUS]
+            severity: warning
 
           - type: column_types
             schema:
@@ -47,6 +50,7 @@ pipeline:
               DISTANCE: Int32
               DEP_TIME: timedelta
               ARR_TIME: timedelta
+              STATUS: category
             severity: warning
 
           - type: allowed_values
@@ -70,13 +74,19 @@ pipeline:
                 max: 100
             severity: warning
 
-        fail_on:
-          error: true
-          warning: false
+        #   Options
+        #      fail: No hace nada, delega a fail_on
+        #      drop: Elimina filas invalidas
+        #      keep: Mantiene filas invalidas
+        #  separate: Divide en valid_df e invalid_df, solo devuelve valid_df
 
         row_actions:
-          error: drop        # drop | keep | separate | fail
+          error: separate
           warning: keep
+
+        fail_on:
+          error: false
+          warning: false
 
         report_path: data/reports/validation_report.json
 
