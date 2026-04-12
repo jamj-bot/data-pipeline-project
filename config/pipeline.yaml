@@ -31,15 +31,12 @@ pipeline:
             dtype: timedelta
             unit: hours
 
-          STATUS:
-            dtype: category
-
     - name: SchemaValidationFilter
       params:
         rules:
           - type: required_columns
-            columns: [FL_DATE, DEP_DELAY, PRICE, ARR_DELAY, AIR_TIME, STATUS]
-            severity: warning
+            columns: [FL_DATE, DEP_DELAY, STATUS, ARR_DELAY, AIR_TIME]
+            severity: warning #error
 
           - type: column_types
             schema:
@@ -50,7 +47,6 @@ pipeline:
               DISTANCE: Int32
               DEP_TIME: timedelta
               ARR_TIME: timedelta
-              STATUS: category
             severity: warning
 
           - type: allowed_values
@@ -61,7 +57,7 @@ pipeline:
           - type: value_range
             schema:
               DEP_DELAY:
-                min: 200 # -2000
+                min: -200 # -2000
                 max: 2000 # 1379
                 min_inclusive: true
                 max_inclusive: true
@@ -74,22 +70,18 @@ pipeline:
                 max: 100
             severity: warning
 
-        #   Options
-        #      fail: No hace nada, delega a fail_on
-        #      drop: Elimina filas invalidas
-        #      keep: Mantiene filas invalidas
-        #  separate: Divide en valid_df e invalid_df, solo devuelve valid_df
-
-        row_actions:
-          error: separate
-          warning: keep
-
         fail_on:
-          error: false
+          error:
+            strategy: threshold
+            threshold: 0.2
+
           warning: false
 
-        report_path: data/reports/validation_report.json
+        row_actions:
+          error: drop        # drop | keep | separate | fail
+          warning: keep
 
+        report_path: data/reports/validation_report.json
     # - name: BusinessValidationFilter
     #   params:
     #     rules:

@@ -1,5 +1,5 @@
 import pandas as pd
-import logging
+import logging 
 import json
 from pathlib import Path
 from data_pipeline.core.filter import DataFilter
@@ -20,7 +20,7 @@ class SchemaValidationFilter(DataFilter):
 
         self._report_path = report_path
 
-        # NEW: fail config (backward compatible)
+        # NEW structured fail config
         self._fail_config = {
             "error": self._parse_fail_config(
                 fail_on.get("error", True) if fail_on else True
@@ -42,7 +42,8 @@ class SchemaValidationFilter(DataFilter):
         if isinstance(value, bool):
             return {
                 "enabled": value,
-                "strategy": "pre"
+                "strategy": "pre",
+                "threshold": None
             }
 
         return {
@@ -57,17 +58,15 @@ class SchemaValidationFilter(DataFilter):
         return data.drop(index=list(rows))
 
     def _should_fail_pre(self, report, severity):
-        config = self._fail_config[severity]
-
-        if not (config["enabled"] and config["strategy"] == "pre"):
-            return False
-
-        return report.has_errors() if severity == "error" else report.has_warnings()
+        cfg = self._fail_config[severity]
+        return cfg["enabled"] and cfg["strategy"] == "pre" and (
+            report.has_errors() if severity == "error" else report.has_warnings()
+        )
 
     def _should_fail_post(self, data, severity):
-        config = self._fail_config[severity]
+        cfg = self._fail_config[severity]
 
-        if not (config["enabled"] and config["strategy"] == "post"):
+        if not (cfg["enabled"] and cfg["strategy"] == "post"):
             return False
 
         new_report = self._engine.run(data)
@@ -78,31 +77,28 @@ class SchemaValidationFilter(DataFilter):
             else new_report.has_warnings()
         )
 
-    def _should_fail_threshold(self, original_count, invalid_rows, severity):
-        config = self._fail_config[severity]
+    def _should_fail_threshold(self, total_rows, invalid_rows, severity):
+        cfg = self._fail_config[severity]
 
-        if config["strategy"] != "threshold":
+        if not (cfg["enabled"] and cfg["strategy"] == "threshold"):
             return False
 
-        threshold = config.get("threshold", 0)
-        ratio = len(invalid_rows) / max(original_count, 1)
+        threshold = cfg["threshold"] or 0
+        ratio = len(invalid_rows) / max(total_rows, 1)
 
         self._logger.info(
-            f"[{severity}] invalid ratio: {ratio:.4f} (threshold={threshold})"
+            f"[{severity}] invalid ratio={ratio:.4f} threshold={threshold}"
         )
 
         return ratio > threshold
 
     def process(self, data: pd.DataFrame) -> pd.DataFrame:
 
-        original_row_count = len(data)
+        total_rows = len(data)
 
         report = self._engine.run(data)
 
-        # =========================
-        # LOGGING (UNCHANGED)
-        # =========================
-
+        # LOGGING
         summary = report.summary()
         self._logger.info(f"Validation summary: {summary}")
 
@@ -120,71 +116,35 @@ class SchemaValidationFilter(DataFilter):
 
             self._logger.info(f"Validation report saved to {self._report_path}")
 
-        # =========================
-        # PRE FAIL (NEW)
-        # =========================
-
+        # PRE FAIL
         if self._should_fail_pre(report, "warning"):
             raise ValueError("Validation failed (pre warning)")
 
         if self._should_fail_pre(report, "error"):
             raise ValueError("Validation failed (pre error)")
 
-        # =========================
-        # ROW-LEVEL HANDLING
-        # =========================
-
+        # ROW ACTIONS
         error_rows = report.invalid_rows("error")
         warning_rows = report.invalid_rows("warning")
 
-        if error_rows:
-            if self._on_error_action == "drop":
-                data = self._drop_rows(data, error_rows)
-                self._logger.info(
-                    f"Dropped {len(error_rows)} rows due to validation errors"
-                )
+        if error_rows and self._on_error_action == "drop":
+            data = self._drop_rows(data, error_rows)
 
-            elif self._on_error_action == "separate":
-                invalid_df = data.loc[list(error_rows)]
-                data = self._drop_rows(data, error_rows)
+        if warning_rows and self._on_warning_action == "drop":
+            data = self._drop_rows(data, warning_rows)
 
-                self._logger.info(
-                    f"Separated {len(error_rows)} invalid rows (errors)"
-                )
-
-        if warning_rows:
-            if self._on_warning_action == "drop":
-                data = self._drop_rows(data, warning_rows)
-                self._logger.info(
-                    f"Dropped {len(warning_rows)} rows due to warnings"
-                )
-
-            elif self._on_warning_action == "separate":
-                invalid_df = data.loc[list(warning_rows)]
-                data = self._drop_rows(data, warning_rows)
-
-                self._logger.info(
-                    f"Separated {len(warning_rows)} invalid rows (warnings)"
-                )
-
-        # =========================
-        # POST FAIL (NEW)
-        # =========================
-
+        # POST FAIL
         if self._should_fail_post(data, "warning"):
             raise ValueError("Validation failed (post warning)")
 
         if self._should_fail_post(data, "error"):
             raise ValueError("Validation failed (post error)")
 
-        # =========================
-        # THRESHOLD FAIL (NEW)
-        # =========================
-
-        if self._should_fail_threshold(original_row_count, error_rows, "error"):
+        # THRESHOLD FAIL
+        if self._should_fail_threshold(total_rows, error_rows, "error"):
             raise ValueError("Validation failed (threshold error)")
 
-        if self._should_fail_threshold(original_row_count, warning_rows, "warning"):
+        if self._should_fail_threshold(total_rows, warning_rows, "warning"):
             raise ValueError("Validation failed (threshold warning)")
 
         return data
