@@ -52,12 +52,12 @@ pipeline:
           - type: allowed_values
             schema:
               STATUS: [FINALIZADO, CANCELADO]
-            severity: warning
+            severity: error
 
           - type: value_range
             schema:
               DEP_DELAY:
-                min: -200 # -2000
+                min: -2000 # -2000
                 max: 2000 # 1379
                 min_inclusive: true
                 max_inclusive: true
@@ -72,14 +72,14 @@ pipeline:
 
         fail_on:
           error:
+            strategy: post
+          warning:
             strategy: threshold
             threshold: 0.2
 
-          warning: false
-
         row_actions:
           error: drop        # drop | keep | separate | fail
-          warning: keep
+          warning: drop
 
         report_path: data/reports/validation_report.json
     # - name: BusinessValidationFilter
