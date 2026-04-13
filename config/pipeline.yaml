@@ -35,7 +35,7 @@ pipeline:
       params:
         rules:
           - type: required_columns
-            columns: [FL_DATE, DEP_DELAY, STATUS, INFOBAE, ARR_DELAY, AIR_TIME]
+            columns: [FL_DATE, DEP_DELAY, STATUS, ARR_DELAY, AIR_TIME]
             severity: warning #error
 
           - type: column_types
@@ -52,12 +52,12 @@ pipeline:
           - type: allowed_values
             schema:
               STATUS: [FINALIZADO, CANCELADO]
-            severity: warning
+            severity: error
 
           - type: value_range
             schema:
               DEP_DELAY:
-                min: 200 # -2000
+                min: -2000 # -2000
                 max: 2000 # 1379
                 min_inclusive: true
                 max_inclusive: true
@@ -71,15 +71,17 @@ pipeline:
             severity: warning
 
         fail_on:
-          error: true
-          warning: false
+          error:
+            strategy: post
+          warning:
+            strategy: threshold
+            threshold: 0.2
 
         row_actions:
           error: drop        # drop | keep | separate | fail
-          warning: keep
+          warning: drop
 
         report_path: data/reports/validation_report.json
-
     # - name: BusinessValidationFilter
     #   params:
     #     rules:
