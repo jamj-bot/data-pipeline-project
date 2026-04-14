@@ -57,7 +57,7 @@ pipeline:
           - type: value_range
             schema:
               DEP_DELAY:
-                min: -2000 # -2000
+                min: 0 # -2000
                 max: 2000 # 1379
                 min_inclusive: true
                 max_inclusive: true
@@ -75,7 +75,7 @@ pipeline:
             strategy: post
           warning:
             strategy: threshold
-            threshold: 0.2
+            threshold: 0.4
 
         row_actions:
           error: drop        # drop | keep | separate | fail
