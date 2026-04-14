@@ -5,40 +5,28 @@ from data_pipeline.validation.rules.base import ValidationRule, register_rule
 
 @register_rule("value_range")
 class ValueRangeRule(ValidationRule):
-    """
-    Valida que los valores de una columna estén dentro de un rango definido.
-    Aplica a tipos numéricos o temporales.
-    No muta datos.
-    """
 
     def __init__(
         self,
         schema: dict[str, dict],
         severity: str = "error"
     ) -> None:
-        """
-        schema ejemplo:
-        {
-            "DEP_DELAY": {"min": -60, "max": 600},
-            "PERCENTAGE": {"min": 0, "max": 100},
-            "DURATION": {"min": "0 days"}
-        }
-        """
         super().__init__(severity)
         self._schema = schema
 
     def validate(self, data: pd.DataFrame):
 
         errors: list[str] = []
+        invalid_indices: list[int] = []
 
         for column, constraints in self._schema.items():
 
             if column not in data.columns:
                 continue
 
-            series = data[column].dropna()
+            series = data[column]
 
-            if series.empty:
+            if series.dropna().empty:
                 continue
 
             min_value = constraints.get("min")
@@ -46,41 +34,48 @@ class ValueRangeRule(ValidationRule):
             min_inclusive = constraints.get("min_inclusive", True)
             max_inclusive = constraints.get("max_inclusive", True)
 
-            # Comparación mínima
+            column_mask = pd.Series(False, index=data.index)
+
             if min_value is not None:
                 if min_inclusive:
-                    invalid = series[series < min_value]
+                    min_mask = series < min_value
                 else:
-                    invalid = series[series <= min_value]
+                    min_mask = series <= min_value
 
-                if not invalid.empty:
+                if min_mask.any():
                     errors.append(
                         f"Columna '{column}' contiene valores menores al mínimo permitido ({min_value})"
                     )
+                    column_mask = column_mask | min_mask
 
-            # Comparación máxima
             if max_value is not None:
                 if max_inclusive:
-                    invalid = series[series > max_value]
+                    max_mask = series > max_value
                 else:
-                    invalid = series[series >= max_value]
+                    max_mask = series >= max_value
 
-                if not invalid.empty:
+                if max_mask.any():
                     errors.append(
                         f"Columna '{column}' contiene valores mayores al máximo permitido ({max_value})"
                     )
+                    column_mask = column_mask | max_mask
+
+            if column_mask.any():
+                invalid_indices.extend(data.loc[column_mask].index.tolist())
 
         if errors:
             return ValidationResult(
                 rule_name=self.__class__.__name__,
                 is_valid=False,
                 errors=errors,
-                severity=self._severity
+                severity=self._severity,
+                invalid_rows=invalid_indices
             )
 
         return ValidationResult(
             rule_name=self.__class__.__name__,
             is_valid=True,
             errors=[],
-            severity=self._severity
+            severity=self._severity,
+            invalid_rows=[]
         )
