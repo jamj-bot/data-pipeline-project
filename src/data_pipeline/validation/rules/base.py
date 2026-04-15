@@ -23,3 +23,16 @@ class ValidationRule(ABC):
     def validate(self, data: pd.DataFrame) -> ValidationResult:
         pass
 
+    # =========================
+    # ROW-LEVEL HELPERS
+    # =========================
+
+    def _get_invalid_indices(self, mask: pd.Series) -> list[int]:
+        if mask is None or not mask.any():
+            return []
+        return mask[mask].index.tolist()
+
+    def _combine_masks(self, base_mask: pd.Series, new_mask: pd.Series) -> pd.Series:
+        if new_mask is None:
+            return base_mask
+        return base_mask | new_mask
