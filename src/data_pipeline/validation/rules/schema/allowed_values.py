@@ -27,7 +27,7 @@ class AllowedValuesRule(ValidationRule):
                 errors.append(
                     f"Columna '{column}' contiene valores no permitidos: {invalid_values}"
                 )
-                invalid_indices.extend(data[mask].index.tolist())
+                invalid_indices.extend(self._get_invalid_indices(mask))
 
         if errors:
             return ValidationResult(

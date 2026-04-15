@@ -46,7 +46,7 @@ class ValueRangeRule(ValidationRule):
                     errors.append(
                         f"Columna '{column}' contiene valores menores al mínimo permitido ({min_value})"
                     )
-                    column_mask = column_mask | min_mask
+                    column_mask = self._combine_masks(column_mask, min_mask)
 
             if max_value is not None:
                 if max_inclusive:
@@ -58,10 +58,10 @@ class ValueRangeRule(ValidationRule):
                     errors.append(
                         f"Columna '{column}' contiene valores mayores al máximo permitido ({max_value})"
                     )
-                    column_mask = column_mask | max_mask
+                    column_mask = self._combine_masks(column_mask, max_mask)
 
             if column_mask.any():
-                invalid_indices.extend(data.loc[column_mask].index.tolist())
+                invalid_indices.extend(self._get_invalid_indices(column_mask))
 
         if errors:
             return ValidationResult(
