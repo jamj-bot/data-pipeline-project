@@ -34,29 +34,33 @@ class ValueRangeRule(ValidationRule):
             min_inclusive = constraints.get("min_inclusive", True)
             max_inclusive = constraints.get("max_inclusive", True)
 
-            column_mask = pd.Series(False, index=data.index)
+            column_mask = self._init_mask(data)
 
+            # MIN
             if min_value is not None:
-                if min_inclusive:
-                    min_mask = series < min_value
-                else:
-                    min_mask = series <= min_value
+                min_mask = (
+                    series < min_value
+                    if min_inclusive
+                    else series <= min_value
+                )
 
                 if min_mask.any():
                     errors.append(
-                        f"Columna '{column}' contiene valores menores al mínimo permitido ({min_value})"
+                        f"Columna '{column}' contiene valores menores al minimo permitido ({min_value})"
                     )
                     column_mask = self._combine_masks(column_mask, min_mask)
 
+            # MAX
             if max_value is not None:
-                if max_inclusive:
-                    max_mask = series > max_value
-                else:
-                    max_mask = series >= max_value
+                max_mask = (
+                    series > max_value
+                    if max_inclusive
+                    else series >= max_value
+                )
 
                 if max_mask.any():
                     errors.append(
-                        f"Columna '{column}' contiene valores mayores al máximo permitido ({max_value})"
+                        f"Columna '{column}' contiene valores mayores al maximo permitido ({max_value})"
                     )
                     column_mask = self._combine_masks(column_mask, max_mask)
 
@@ -69,7 +73,7 @@ class ValueRangeRule(ValidationRule):
                 is_valid=False,
                 errors=errors,
                 severity=self._severity,
-                invalid_rows=invalid_indices
+                invalid_rows=list(set(invalid_indices))
             )
 
         return ValidationResult(

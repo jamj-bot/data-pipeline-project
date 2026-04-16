@@ -24,9 +24,11 @@ class AllowedValuesRule(ValidationRule):
 
             if mask.any():
                 invalid_values = set(data.loc[mask, column].unique())
+
                 errors.append(
                     f"Columna '{column}' contiene valores no permitidos: {invalid_values}"
                 )
+
                 invalid_indices.extend(self._get_invalid_indices(mask))
 
         if errors:
@@ -35,7 +37,7 @@ class AllowedValuesRule(ValidationRule):
                 is_valid=False,
                 errors=errors,
                 severity=self._severity,
-                invalid_rows=invalid_indices
+                invalid_rows=list(set(invalid_indices))
             )
 
         return ValidationResult(

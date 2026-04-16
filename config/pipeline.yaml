@@ -94,7 +94,7 @@ pipeline:
 
     - name: DataQualityMetricsFilter
 
-    - name: DeduplicateFilter
+    # - name: DeduplicateFilter
 
     - name: CleanDataFilter
 
