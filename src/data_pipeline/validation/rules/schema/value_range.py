@@ -36,7 +36,6 @@ class ValueRangeRule(ValidationRule):
 
             column_mask = self._init_mask(data)
 
-            # MIN
             if min_value is not None:
                 min_mask = (
                     series < min_value
@@ -46,11 +45,10 @@ class ValueRangeRule(ValidationRule):
 
                 if min_mask.any():
                     errors.append(
-                        f"Columna '{column}' contiene valores menores al minimo permitido ({min_value})"
+                        f"Columna '{column}' contiene valores menores al mínimo permitido ({min_value})"
                     )
                     column_mask = self._combine_masks(column_mask, min_mask)
 
-            # MAX
             if max_value is not None:
                 max_mask = (
                     series > max_value
@@ -60,7 +58,7 @@ class ValueRangeRule(ValidationRule):
 
                 if max_mask.any():
                     errors.append(
-                        f"Columna '{column}' contiene valores mayores al maximo permitido ({max_value})"
+                        f"Columna '{column}' contiene valores mayores al máximo permitido ({max_value})"
                     )
                     column_mask = self._combine_masks(column_mask, max_mask)
 
@@ -73,6 +71,7 @@ class ValueRangeRule(ValidationRule):
                 is_valid=False,
                 errors=errors,
                 severity=self._severity,
+                is_row_level=True,
                 invalid_rows=list(set(invalid_indices))
             )
 
@@ -81,5 +80,6 @@ class ValueRangeRule(ValidationRule):
             is_valid=True,
             errors=[],
             severity=self._severity,
+            is_row_level=True,
             invalid_rows=[]
         )

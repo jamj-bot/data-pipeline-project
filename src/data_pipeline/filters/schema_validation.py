@@ -131,8 +131,8 @@ class SchemaValidationFilter(DataFilter):
             path = Path(self._report_path)
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(path, "w") as f:
-                json.dump(report.to_dict(), f, indent=2)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
 
         if self._should_fail_pre(report, "warning"):
             raise ValueError("Validation failed (pre warning)")

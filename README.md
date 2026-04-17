@@ -15,9 +15,13 @@ diseñada para construir pipelines robustos, configurables y extensibles en Pyth
 - [Uso](#uso)
 - [Configuración (pipeline.yaml)](#configuración-pipelineyaml)
 - [Flujo del pipeline](#flujo-del-pipeline)
+- [Sistema de validación](#sistema-de-validación)
+- [Semántica de validación](#semántica-de-validación)
 - [Estado actual del sistema](#estado-actual-del-sistema)
 - [Hoja de ruta](#hoja-de-ruta)
 - [Testing](#testing)
+- [Notas de diseño importantes](#notas-de-diseño-importantes)
+- [Filosofía del proyecto](#filosofía-del-proyecto)
 
 ---
 
@@ -38,6 +42,9 @@ diseñada para construir pipelines robustos, configurables y extensibles en Pyth
     - errores vs warnings
     - estrategias de fallo (`pre`, `post`, `threshold`)
     - manejo de filas inválidas (drop, separate)
+  - Modelo de resultado consistente:
+    - `is_row_level`
+    - `invalid_rows` siempre lista
 
 - **Cleaning**
   - `CleanDataFilter`
@@ -181,8 +188,8 @@ pipeline:
    - filtros
 
 3. **Validación**
-   - reglas estructurales
-   - reglas de negocio
+   - reglas estructurales (dataset-level)
+   - reglas semánticas (row-level)
 
 4. **Salida**
    - persistencia
@@ -201,21 +208,70 @@ pipeline:
 
 ### Tipos de reglas
 
-| Tipo            | Ejemplo              | Row-level |
-|-----------------|---------------------|----------|
-| estructural     | required_columns    | No        |
-| semántica       | value_range         | Si        |
+El sistema distingue explícitamente entre dos tipos de reglas:
+
+| Tipo            | Ejemplo              | is_row_level | invalid_rows |
+|-----------------|---------------------|-------------|--------------|
+| estructural     | required_columns    | False        | []           |
+| semántica       | value_range         | True         | [indices]    |
+
+---
+
+### Modelo de resultado (`ValidationResult`)
+
+Cada regla devuelve un objeto con semántica explícita:
+
+- `is_row_level`
+  - Indica si la regla opera a nivel fila
+- `invalid_rows`
+  - Siempre es una lista (nunca `None`)
+  - Solo tiene valores si `is_row_level = True`
+
+Esto elimina ambigüedad y permite un manejo consistente en todo el sistema.
 
 ### Capacidades
 
 - errores vs warnings
-- invalid_rows tracking
+- row-level tracking (`invalid_rows`)
+- diferenciación explícita entre reglas estructurales y row-level
 - fail strategies:
   - `pre`
   - `post`
   - `threshold`
 
 ---
+
+## Semántica de validación
+
+El sistema separa explícitamente dos niveles de validación:
+
+### 1. Dataset-level (estructural)
+- Validan la estructura del DataFrame
+- Ejemplos:
+  - columnas requeridas
+  - tipos de datos
+- No operan sobre filas individuales
+
+### 2. Row-level (semántica)
+- Validan valores dentro de las filas
+- Ejemplos:
+  - rangos numéricos
+  - valores permitidos
+- Permiten:
+  - drop de filas
+  - separación de registros inválidos
+
+---
+
+### Implicación clave
+
+Solo las reglas **row-level** afectan:
+
+- `invalid_rows`
+- acciones como `drop` o `separate`
+- estrategias `threshold`
+
+Las reglas estructurales solo afectan el estado global de validación.
 
 ## Estado actual del sistema
 
@@ -286,7 +342,10 @@ pytest tests/
 ## Notas de diseño importantes
 
 - El primer componente **NO es un filtro**, es un `DataSource`
-- No todos los rules soportan `invalid_rows` (por diseño)
+- Todas las reglas devuelven `invalid_rows`, pero:
+  - reglas estructurales → siempre `[]`
+  - reglas row-level → lista de índices inválidos
+- El flag `is_row_level` define cómo debe interpretarse el resultado
 - Los filtros trabajan sobre `pandas.DataFrame`
 - El sistema es **config-driven** (YAML)
 

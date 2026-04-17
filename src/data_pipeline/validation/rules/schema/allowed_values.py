@@ -37,6 +37,7 @@ class AllowedValuesRule(ValidationRule):
                 is_valid=False,
                 errors=errors,
                 severity=self._severity,
+                is_row_level=True,
                 invalid_rows=list(set(invalid_indices))
             )
 
@@ -45,5 +46,6 @@ class AllowedValuesRule(ValidationRule):
             is_valid=True,
             errors=[],
             severity=self._severity,
+            is_row_level=True,
             invalid_rows=[]
         )
