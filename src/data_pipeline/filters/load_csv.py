@@ -1,36 +1,24 @@
 import pandas as pd
 from pathlib import Path
 
-from data_pipeline.core.filter import DataFilter
+from data_pipeline.core.data_source import DataSource
 
-class LoadCSVFilter(DataFilter):
+
+class LoadCSVFilter(DataSource):
     """
-    Filtro encargado de cargar datos desde un archivo CSV.
+    Fuente de datos desde CSV.
     """
+
     def __init__(self, file_path: str):
         self._file_path = Path(file_path)
 
-    def process(self, data=None) -> pd.DataFrame:
+    def load(self) -> pd.DataFrame:
         if not self._file_path.exists():
             raise FileNotFoundError(f"Archivo CSV no encontrado: {self._file_path}")
 
         df = pd.read_csv(self._file_path)
 
         if df.empty:
-            raise ValueError("El DataFrame cargado está vacio")
+            raise ValueError("El DataFrame cargado está vacío")
 
         return df
-
-
-
-    # def __init__(self, file_path: str) -> None:
-    #     self._file_path = file_path
-
-    # def process(self, data: pd.DataFrame | None) -> pd.DataFrame:
-    #     """
-    #     Carga el CSV desde disco y devuelve un DataFrame.
-
-    #     :param data: No se utiliza (primer filtro de la pipeline)
-    #     :return: DataFrame con los datos cargados
-    #     """
-    #     return pd.read_csv(self._file_path)
