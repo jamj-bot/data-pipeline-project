@@ -25,10 +25,19 @@ class ValidationReport:
         return len(self.warnings) > 0
 
     def invalid_rows(self, severity: str = "error") -> Set[int]:
+        """
+        Devuelve índices únicamente de reglas row-level.
+        """
         rows = set()
+
         for r in self.results:
-            if not r.is_valid and r.severity == severity and r.invalid_rows:
+            if (
+                not r.is_valid
+                and r.severity == severity
+                and r.is_row_level
+            ):
                 rows.update(r.invalid_rows)
+
         return rows
 
     def summary(self) -> dict:
@@ -46,6 +55,7 @@ class ValidationReport:
                     "rule": e.rule_name,
                     "messages": e.errors,
                     "severity": e.severity,
+                    "is_row_level": e.is_row_level,
                 }
                 for e in self.errors
             ],
@@ -54,6 +64,7 @@ class ValidationReport:
                     "rule": w.rule_name,
                     "messages": w.errors,
                     "severity": w.severity,
+                    "is_row_level": w.is_row_level,
                 }
                 for w in self.warnings
             ],
