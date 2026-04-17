@@ -2,24 +2,14 @@ from abc import ABC, abstractmethod
 import pandas as pd
 
 
-class DataFilter(object):
+class DataFilter(ABC):
     """
-    Contrato base para todos los filtros de la pipeline.
+    Contrato base para filtros de transformación.
 
-    Un filtro:
-    - Recibe un DataFrame
-    - Aplica una transformación
-    - Devuelve un nuevo DataFrame
+    - SIEMPRE recibe un DataFrame
+    - SIEMPRE devuelve un DataFrame
     """
 
     @abstractmethod
     def process(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Procesa los datos de entrada y devuelve los datos transformados.
-
-        :param data: DataFrame de entrada
-        :return: DataFrame transformado
-        """
         pass
-
-

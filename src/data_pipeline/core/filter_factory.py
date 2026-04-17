@@ -8,10 +8,12 @@ from data_pipeline.filters.schema_validation import SchemaValidationFilter
 from data_pipeline.filters.business_validation import BusinessValidationFilter
 from data_pipeline.filters.filter_by_date import FilterByDateRange
 from data_pipeline.filters.save_csv import SaveCSVFilter
-from data_pipeline.core.filter import DataFilter
 
-""" Diccionario que mapea nombres (strings) a clases  """
-FILTER_REGISTRY: dict[str, type[DataFilter]] = {
+from data_pipeline.core.filter import DataFilter
+from data_pipeline.core.data_source import DataSource
+
+
+FILTER_REGISTRY: dict[str, type] = {
     "LoadCSVFilter": LoadCSVFilter,
     "ChunkedCSVFilter": ChunkedCSVFilter,
     "CleanDataFilter": CleanDataFilter,
@@ -24,16 +26,14 @@ FILTER_REGISTRY: dict[str, type[DataFilter]] = {
     "SaveCSVFilter": SaveCSVFilter,
 }
 
-
-def create_filter(name: str, params: dict | None = None) -> DataFilter:
+def create_component(name: str, params: dict | None = None):
 
     # Verifica que el filtro exista en el diccionario
     if name not in FILTER_REGISTRY:
-        raise ValueError(f"Filtro no registrado: {name}")
+        raise ValueError(f"Componente no registrado: {name}")
 
-    # Recupera la clase correspondiente, p. ej. LoadCSVFilter
-    filter_class = FILTER_REGISTRY[name]
+    # Recupera la clase correspondiente
+    component_class = FILTER_REGISTRY[name]
 
     # Crea el objeto, en caso de requerirlo usa los **params
-        # P. ej. LoadCSVFilter(filepath="data.csv")
-    return filter_class(**(params or {}))
+    return component_class(**(params or {}))
