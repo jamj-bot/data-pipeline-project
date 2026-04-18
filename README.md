@@ -114,7 +114,8 @@ data-pipeline-project/
 ├── requirements.txt
 └── README.md
 ```
-
+> Nota: Las carpetas `schema/` y `business/` son solo una organización lógica.
+> Ambas contienen reglas que implementan el mismo contrato (`ValidationRule`).
 ---
 
 ## Requisitos
@@ -198,6 +199,18 @@ pipeline:
 ---
 
 ## Sistema de validación
+
+### Unificación del sistema de validación
+
+El sistema NO distingue entre validación de esquema y validación de negocio a nivel de ejecución.
+
+Todas las reglas:
+
+- implementan `ValidationRule`
+- se ejecutan a través de `RuleEngine`
+- devuelven `ValidationResult`
+
+La distinción entre reglas (estructurales vs negocio) es únicamente organizacional, no arquitectónica.
 
 ### Componentes
 

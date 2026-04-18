@@ -3,7 +3,6 @@ from data_pipeline.validation.rules.schema.required_columns import RequiredColum
 from data_pipeline.validation.rules.schema.column_types import ColumnTypesRule
 from data_pipeline.validation.rules.schema.allowed_values import AllowedValuesRule
 from data_pipeline.validation.rules.schema.value_range import ValueRangeRule
-from data_pipeline.validation.rules.business.numeric_range_rule import NumericRangeRule
 from data_pipeline.validation.rules.base import RULE_REGISTRY, ValidationRule
 
 
