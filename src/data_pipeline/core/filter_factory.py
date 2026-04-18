@@ -4,7 +4,7 @@ from data_pipeline.filters.clean_data import CleanDataFilter
 from data_pipeline.filters.deduplicate import DeduplicateFilter
 from data_pipeline.filters.data_quality_metrics import DataQualityMetricsFilter
 from data_pipeline.filters.data_type_converter import DataTypeConverterFilter
-from data_pipeline.filters.schema_validation import SchemaValidationFilter
+from data_pipeline.filters.validation import ValidationFilter
 from data_pipeline.filters.filter_by_date import FilterByDateRange
 from data_pipeline.filters.save_csv import SaveCSVFilter
 
@@ -18,7 +18,7 @@ FILTER_REGISTRY: dict[str, type] = {
     "CleanDataFilter": CleanDataFilter,
     "DeduplicateFilter": DeduplicateFilter,
     "DataQualityMetricsFilter": DataQualityMetricsFilter,
-    "SchemaValidationFilter": SchemaValidationFilter,
+    "ValidationFilter": ValidationFilter,
     "DataTypeConverterFilter": DataTypeConverterFilter,
     "FilterByDateRange": FilterByDateRange,
     "SaveCSVFilter": SaveCSVFilter,
