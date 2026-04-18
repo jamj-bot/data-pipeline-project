@@ -83,18 +83,10 @@ pipeline:
 
         invalid_rows_path: data/reports/invalid_rows
         report_path: data/reports/validation_report.json
-    # - name: BusinessValidationFilter
-    #   params:
-    #     rules:
-    #       - type: numeric_range
-    #         column: DISTANCE
-    #         min: 1
-    #         max: 15332
-    #         severity: warning
 
     - name: DataQualityMetricsFilter
 
-    # - name: DeduplicateFilter
+    - name: DeduplicateFilter
 
     - name: CleanDataFilter
 
