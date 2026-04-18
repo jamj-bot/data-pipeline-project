@@ -33,11 +33,13 @@ diseñada para construir pipelines robustos, configurables y extensibles en Pyth
   - `LoadCSVFilter` (fuente de datos)
   - `ChunkedCSVFilter` (base para escalabilidad)
 
-- **Schema Validation**
-  - `required_columns`
-  - `column_types`
-  - `allowed_values`
-  - `value_range`
+- **Validation System**
+  - `ValidationFilter` (entry point del subsistema de validación)
+  - Reglas disponibles:
+    - `required_columns`
+    - `column_types`
+    - `allowed_values`
+    - `value_range`
   - Soporte para:
     - errores vs warnings
     - estrategias de fallo (`pre`, `post`, `threshold`)
@@ -89,30 +91,59 @@ DataSource → Filter → Filter → ... → Output
 
 ```
 data-pipeline-project/
-├── config/
-│   └── pipeline.yaml
-├── scripts/
-│   └── run_pipeline.py
-├── src/data_pipeline/
-│   ├── core/
-│   │   ├── data_source.py
-│   │   ├── filter.py
-│   │   ├── filter_factory.py
-│   │   ├── logger.py
-│   │   └── pipeline.py
-│   ├── filters/
-│   ├── validation/
-│   │   ├── engine/
-│   │   ├── rules/
-│   │   │   ├── schema/
-│   │   │   └── business/
-│   │   ├── result.py
-│   │   └── validation_report.py
-│   └── utils/
-│       └── config_loader.py
-├── tests/
+├── config
+│   └── pipeline.yaml
+├── pyproject.toml
+├── README.md
 ├── requirements.txt
-└── README.md
+├── scripts
+│   └── run_pipeline.py
+├── src
+│   ├── data_pipeline
+│   │   ├── core
+│   │   │   ├── data_source.py
+│   │   │   ├── filter_factory.py
+│   │   │   ├── filter.py
+│   │   │   ├── logger.py
+│   │   │   └── pipeline.py
+│   │   ├── filters
+│   │   │   ├── aggregate_sales.py
+│   │   │   ├── clean_data.py
+│   │   │   ├── data_quality_metrics.py
+│   │   │   ├── data_type_converter.py
+│   │   │   ├── deduplicate.py
+│   │   │   ├── filter_by_date.py
+│   │   │   ├── load_csv_chunks.py
+│   │   │   ├── load_csv.py
+│   │   │   ├── save_csv.py
+│   │   │   └── validation.py
+│   │   ├── __init__.py
+│   │   ├── utils
+│   │   │   └── config_loader.py
+│   │   └── validation
+│   │       ├── engine
+│   │       │   └── engine.py
+│   │       ├── result.py
+│   │       ├── rules
+│   │       │   ├── base.py
+│   │       │   ├── business
+│   │       │   ├── rule_factory.py
+│   │       │   └── schema
+│   │       │       ├── allowed_values.py
+│   │       │       ├── column_types.py
+│   │       │       ├── required_columns.py
+│   │       │       └── value_range.py
+│   │       └── validation_report.py
+│   └── data_pipeline.egg-info
+│       ├── dependency_links.txt
+│       ├── PKG-INFO
+│       ├── SOURCES.txt
+│       └── top_level.txt
+└── tests
+    ├── test_clean_data.py
+    ├── test_filter_by_date.py
+    └── test_save_csv_filter.py
+
 ```
 > Nota: Las carpetas `schema/` y `business/` son solo una organización lógica.
 > Ambas contienen reglas que implementan el mismo contrato (`ValidationRule`).
@@ -169,7 +200,7 @@ pipeline:
         dtype_mapping:
           DEP_DELAY: Int16
 
-    - name: SchemaValidationFilter
+    - name: ValidationFilter
       params:
         rules:
           - type: required_columns
@@ -211,6 +242,21 @@ Todas las reglas:
 - devuelven `ValidationResult`
 
 La distinción entre reglas (estructurales vs negocio) es únicamente organizacional, no arquitectónica.
+
+### Punto de entrada
+
+El sistema de validación es ejecutado a través de un único filtro:
+
+- `ValidationFilter`
+
+Este filtro actúa como punto de contacto entre el pipeline y el subsistema de validación.
+
+No existe distinción a nivel de ejecución entre:
+
+- validación de esquema
+- validación de negocio
+
+Ambos tipos de reglas son procesados de forma uniforme.
 
 ### Componentes
 

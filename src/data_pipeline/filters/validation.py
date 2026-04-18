@@ -6,7 +6,7 @@ from data_pipeline.core.filter import DataFilter
 from data_pipeline.validation.engine.engine import RuleEngine
 
 
-class SchemaValidationFilter(DataFilter):
+class ValidationFilter(DataFilter):
 
     def __init__(
         self,
