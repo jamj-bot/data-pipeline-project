@@ -4,6 +4,7 @@ import pandas as pd
 from data_pipeline.core.filter import DataFilter
 from data_pipeline.core.logger import get_logger
 
+
 class DataQualityMetricsFilter(DataFilter):
     """ Calcula métricas básicas de calidad de datos.
         No modifica el DataFrame
@@ -15,26 +16,24 @@ class DataQualityMetricsFilter(DataFilter):
         if data is None:
             raise ValueError("DataQualityMetricsFilter requiere un DataFrame como entrada")
 
-
         self._logger.info(f">>> Inicio: General Info")
-        # Info general
+
         buffer = io.StringIO()
         data.info(buf=buffer)
         self._logger.info(f"\n{buffer.getvalue()}")
-        self._logger.info(f">>> Fin: General Info")
 
+        self._logger.info(f">>> Fin: General Info")
 
         total_rows = len(data)
         duplicate_rows = data.duplicated().sum()
-        duplicated_percentage = (duplicate_rows/total_rows)*100
+        duplicated_percentage = (duplicate_rows / total_rows) * 100 if total_rows > 0 else 0
 
         null_counts = data.isna().sum()
 
         total_isnull_count = data.isnull().sum().sum()
-        null_cells_percentage = (total_isnull_count/ data.size)*100
+        null_cells_percentage = (total_isnull_count / data.size) * 100 if data.size > 0 else 0
 
-        # Calcular el ancho máximo de los nombres de columnas
-        max_col_length = max(len(str(col)) for col in null_counts.keys())
+        max_col_length = max((len(str(col)) for col in null_counts.keys()), default=0)
 
         self._logger.info(f">>> Inicio: Metrics")
 
@@ -42,8 +41,10 @@ class DataQualityMetricsFilter(DataFilter):
         self._logger.info(f"\tFilas_Duplicadas: {duplicate_rows} ({duplicated_percentage:.4f}%)")
 
         for column, nulls in null_counts.items():
+            percentage = (nulls / total_rows) * 100 if total_rows > 0 else 0
             self._logger.info(
-                f"\tColumna: {column:<{max_col_length}} | Valores_nulos: {nulls} ({(nulls / total_rows)*100:.4f}%)")
+                f"\tColumna: {column:<{max_col_length}} | Valores_nulos: {nulls} ({percentage:.4f}%)"
+            )
 
         self._logger.info(f"\tNulos_Totales: {total_isnull_count:,} ({null_cells_percentage:.4f}%)")
 
