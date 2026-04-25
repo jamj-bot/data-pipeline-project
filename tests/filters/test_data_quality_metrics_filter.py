@@ -73,13 +73,13 @@ class TestDataQualityMetricsFilter:
         
         assert result.equals(df)
 
-    # def test_empty_dataframe(self):
-    #     """DataFrame vacío."""
-    #     df = pd.DataFrame()
-    #     filter_ = DataQualityMetricsFilter()
-    #     result = filter_.process(df)
+    def test_empty_dataframe(self):
+        """DataFrame vacío."""
+        df = pd.DataFrame()
+        filter_ = DataQualityMetricsFilter()
+        result = filter_.process(df)
         
-    #     assert result.empty
+        assert result.empty
 
     def test_large_dataframe_performance(self):
         """Performance con DataFrame grande."""
