@@ -90,7 +90,7 @@ DataSource → Filter → Filter → ... → Output
 ## Estructura del proyecto
 
 ```
-data-pipeline-project/
+.
 ├── config
 │   └── pipeline.yaml
 ├── pyproject.toml
@@ -140,9 +140,22 @@ data-pipeline-project/
 │       ├── SOURCES.txt
 │       └── top_level.txt
 └── tests
-    ├── test_clean_data.py
-    ├── test_filter_by_date.py
-    └── test_save_csv_filter.py
+    ├── conftest.py
+    ├── filters
+    │   ├── test_clean_data_filter.py
+    │   ├── test_data_quality_metrics_filter.py
+    │   ├── test_deduplicate_filter.py
+    │   ├── test_filter_by_date_filter.py
+    │   └── test_save_csv_filter.py
+    └── validation
+        ├── rules
+        │   ├── test_allowed_values_rule.py
+        │   ├── test_column_types_rule.py
+        │   ├── test_required_columns_rule.py
+        │   └── test_value_range_rule.py
+        ├── test_rule_engine.py
+        ├── test_validation_report.py
+        └── test_validation_result.py
 
 ```
 > Nota: Las carpetas `schema/` y `business/` son solo una organización lógica.
@@ -383,7 +396,25 @@ Las reglas estructurales solo afectan el estado global de validación.
 Ejecutar tests:
 
 ```bash
+# Instalar pytest si no está instalado
+pip install pytest pytest-mock
+
+# Ejecutar todos los tests
 pytest tests/
+
+# Ejecutar con cobertura
+pytest tests/ --cov=src/data_pipeline --cov-report=html
+
+# Ejecutar categoría específica
+pytest tests/validation/
+pytest tests/filters/
+
+# Ejecutar con verbose
+pytest tests/ -v
+
+# Ejecutar un test específico
+pytest tests/validation/test_validation_result.py::TestValidationResult::test_creation_valid_result
+
 ```
 
 ### Cobertura actual
