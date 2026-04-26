@@ -1,9 +1,9 @@
 import pandas as pd
-import logging 
 import json
 from pathlib import Path
 from data_pipeline.core.filter import DataFilter
 from data_pipeline.validation.engine.engine import RuleEngine
+from data_pipeline.core.logger import get_logger
 
 
 class ValidationFilter(DataFilter):
@@ -17,7 +17,7 @@ class ValidationFilter(DataFilter):
         invalid_rows_path: str | None = None
     ):
         self._engine = RuleEngine(rules)
-        self._logger = logging.getLogger("DataPipeline")
+        self._logger = get_logger(self.__class__.__name__)
 
         self._report_path = report_path
         self._invalid_rows_path = invalid_rows_path
