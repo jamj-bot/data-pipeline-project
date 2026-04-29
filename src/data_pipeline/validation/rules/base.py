@@ -6,14 +6,6 @@ import pandas as pd
 
 RULE_REGISTRY: dict[str, Type["ValidationRule"]] = {}
 
-
-def register_rule(name: str):
-    def decorator(cls):
-        RULE_REGISTRY[name] = cls
-        return cls
-    return decorator
-
-
 class ValidationRule(ABC):
 
     def __init__(self, severity: str = "error") -> None:

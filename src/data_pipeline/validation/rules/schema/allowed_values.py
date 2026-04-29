@@ -1,9 +1,8 @@
 import pandas as pd
 from data_pipeline.validation.result import ValidationResult
-from data_pipeline.validation.rules.base import ValidationRule, register_rule
+from data_pipeline.validation.rules.base import ValidationRule
 
 
-@register_rule("allowed_values")
 class AllowedValuesRule(ValidationRule):
 
     def __init__(self, schema: dict[str, list], severity: str = "error") -> None:
