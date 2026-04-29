@@ -6,6 +6,14 @@ from data_pipeline.validation.rules.schema.value_range import ValueRangeRule
 from data_pipeline.validation.rules.base import RULE_REGISTRY, ValidationRule
 
 
+RULE_REGISTRY.update({
+    "required_columns": RequiredColumnsRule,
+    "column_types": ColumnTypesRule,
+    "allowed_values": AllowedValuesRule,
+    "value_range": ValueRangeRule,
+})
+
+
 def create_rules(config: list[dict]) -> List[ValidationRule]:
 
     rules: List[ValidationRule] = []

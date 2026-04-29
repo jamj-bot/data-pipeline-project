@@ -1,9 +1,8 @@
 import pandas as pd
 from data_pipeline.validation.result import ValidationResult
-from data_pipeline.validation.rules.base import ValidationRule, register_rule
+from data_pipeline.validation.rules.base import ValidationRule
 
 
-@register_rule("required_columns")
 class RequiredColumnsRule(ValidationRule):
 
     def __init__(self, columns: list[str], severity: str = "error") -> None:

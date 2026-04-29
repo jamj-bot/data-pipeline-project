@@ -1,10 +1,9 @@
 import pandas as pd
 from data_pipeline.validation.result import ValidationResult
 from pandas.api.types import is_dtype_equal
-from data_pipeline.validation.rules.base import ValidationRule, register_rule
+from data_pipeline.validation.rules.base import ValidationRule
 
 
-@register_rule("column_types")
 class ColumnTypesRule(ValidationRule):
 
     _TYPE_MAPPING: dict[str, object] = {
