@@ -3,15 +3,15 @@ from data_pipeline.validation.rules.schema.required_columns import RequiredColum
 from data_pipeline.validation.rules.schema.column_types import ColumnTypesRule
 from data_pipeline.validation.rules.schema.allowed_values import AllowedValuesRule
 from data_pipeline.validation.rules.schema.value_range import ValueRangeRule
-from data_pipeline.validation.rules.base import RULE_REGISTRY, ValidationRule
+from data_pipeline.validation.rules.base import ValidationRule
 
 
-RULE_REGISTRY.update({
+RULE_REGISTRY = {
     "required_columns": RequiredColumnsRule,
     "column_types": ColumnTypesRule,
     "allowed_values": AllowedValuesRule,
     "value_range": ValueRangeRule,
-})
+}
 
 
 def create_rules(config: list[dict]) -> List[ValidationRule]:
