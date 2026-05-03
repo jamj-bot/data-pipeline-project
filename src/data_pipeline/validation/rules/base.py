@@ -1,10 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Type
 from data_pipeline.validation.result import ValidationResult
 import pandas as pd
 
-
-RULE_REGISTRY: dict[str, Type["ValidationRule"]] = {}
 
 class ValidationRule(ABC):
 
