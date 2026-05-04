@@ -6,7 +6,8 @@ from data_pipeline.validation.rules.schema.value_range import ValueRangeRule
 from data_pipeline.validation.rules.base import ValidationRule
 
 
-RULE_REGISTRY = {
+# RULE REGISTRY 
+RULE_REGISTRY: dict[str, type[ValidationRule]] = {
     "required_columns": RequiredColumnsRule,
     "column_types": ColumnTypesRule,
     "allowed_values": AllowedValuesRule,
@@ -15,6 +16,12 @@ RULE_REGISTRY = {
 
 
 def create_rules(config: list[dict]) -> List[ValidationRule]:
+    """
+    Crea instancias de reglas a partir de configuración declarativa.
+
+    RULE_REGISTRY es la única fuente de verdad para la resolución
+    de reglas (string -> clase).
+    """
 
     rules: List[ValidationRule] = []
 
