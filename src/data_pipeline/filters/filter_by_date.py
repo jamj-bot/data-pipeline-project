@@ -19,11 +19,12 @@ class FilterByDateRange(DataFilter):
         if self._field_date not in data.columns:
             raise ValueError(f"El DataFrame debe tener una columna llamada '{self._field_date}'")
 
-        df = data.copy() # Copia defensiva
-        # Convierte la columna "date" a datetime64[ns]
-        df[self._field_date] = pd.to_datetime(df[self._field_date])
-        # Crea máscara booleana que selecciona las filas que cumplen con ambas condiciones
+        df = data.copy()
+
+        df = df.assign(**{
+            self._field_date: pd.to_datetime(df[self._field_date])
+        })
+
         mask = (df[self._field_date] >= self._start_date) & (df[self._field_date] <= self._end_date)
 
-        # Retorna nuevo dataframe que contiene solo las filas que cumple true en la máscara booleana
         return df.loc[mask]
