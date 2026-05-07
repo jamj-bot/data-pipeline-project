@@ -1,4 +1,4 @@
-from data_pipeline.filters.load_csv import LoadCSVFilter
+from data_pipeline.sources.load_csv import LoadCSVFilter
 from data_pipeline.filters.clean_data import CleanDataFilter
 from data_pipeline.filters.deduplicate import DeduplicateFilter
 from data_pipeline.filters.data_quality_metrics import DataQualityMetricsFilter
