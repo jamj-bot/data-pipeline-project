@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from data_pipeline.filters.save_csv import SaveCSVFilter
+from data_pipeline.sinks.save_csv import SaveCSVFilter
 
 def test_save_csv_filter_creates_file(tmp_path):
     # Arrange
