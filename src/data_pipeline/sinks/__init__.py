@@ -1,3 +1,3 @@
-from .save_csv import SaveCSVFilter
+from .save_csv import SaveCSVSink
 
-__all__ = ["SaveCSVFilter"]
+__all__ = ["SaveCSVSink"]

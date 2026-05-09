@@ -96,6 +96,6 @@ pipeline:
         end_date: "2009-01-01"
         field_date: FL_DATE
 
-    - name: SaveCSVFilter
+    - name: SaveCSVSink
       params:
         output_path: data/processed/sales_2023.csv

@@ -63,7 +63,7 @@ diseñada para construir pipelines robustos, configurables y extensibles en Pyth
   - `DataQualityMetricsFilter`
 
 - **Persistence**
-  - `SaveCSVFilter`
+  - `SaveCSVSink`
 
 ---
 

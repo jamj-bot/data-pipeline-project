@@ -5,7 +5,7 @@ from data_pipeline.filters.data_quality_metrics import DataQualityMetricsFilter
 from data_pipeline.filters.data_type_converter import DataTypeConverterFilter
 from data_pipeline.filters.validation import ValidationFilter
 from data_pipeline.filters.filter_by_date import FilterByDateRange
-from data_pipeline.sinks.save_csv import SaveCSVFilter
+from data_pipeline.sinks.save_csv import SaveCSVSink
 
 from data_pipeline.core.filter import DataFilter
 from data_pipeline.core.data_source import DataSource
@@ -19,7 +19,7 @@ FILTER_REGISTRY: dict[str, type] = {
     "ValidationFilter": ValidationFilter,
     "DataTypeConverterFilter": DataTypeConverterFilter,
     "FilterByDateRange": FilterByDateRange,
-    "SaveCSVFilter": SaveCSVFilter,
+    "SaveCSVSink": SaveCSVSink,
 }
 
 def create_component(name: str, params: dict | None = None):
