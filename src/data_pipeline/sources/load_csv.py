@@ -4,7 +4,7 @@ from pathlib import Path
 from data_pipeline.core.data_source import DataSource
 
 
-class LoadCSVFilter(DataSource):
+class LoadCSVPump(DataSource):
     """
     Fuente de datos desde CSV.
     """

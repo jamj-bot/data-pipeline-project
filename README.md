@@ -30,7 +30,7 @@ diseñada para construir pipelines robustos, configurables y extensibles en Pyth
 ### Implementado
 
 - **Data Sources**
-  - `LoadCSVFilter` (fuente de datos)
+  - `LoadCSVPump` (fuente de datos)
   - `ChunkedCSVFilter` (base para escalabilidad)
 
 - **Validation System**
@@ -204,7 +204,7 @@ La pipeline es **declarativa** y se define en YAML:
 ```yaml
 pipeline:
   filters:
-    - name: LoadCSVFilter
+    - name: LoadCSVPump
       params:
         file_path: data/raw/limited_dataset.csv
 

@@ -1,6 +1,6 @@
 pipeline:
   filters:
-    - name: LoadCSVFilter
+    - name: LoadCSVPump
       params:
         file_path: data/raw/limited_dataset.csv
 

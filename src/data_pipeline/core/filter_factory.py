@@ -1,4 +1,4 @@
-from data_pipeline.sources.load_csv import LoadCSVFilter
+from data_pipeline.sources.load_csv import LoadCSVPump
 from data_pipeline.filters.clean_data import CleanDataFilter
 from data_pipeline.filters.deduplicate import DeduplicateFilter
 from data_pipeline.filters.data_quality_metrics import DataQualityMetricsFilter
@@ -12,7 +12,7 @@ from data_pipeline.core.data_source import DataSource
 
 
 FILTER_REGISTRY: dict[str, type] = {
-    "LoadCSVFilter": LoadCSVFilter,
+    "LoadCSVPump": LoadCSVPump,
     "CleanDataFilter": CleanDataFilter,
     "DeduplicateFilter": DeduplicateFilter,
     "DataQualityMetricsFilter": DataQualityMetricsFilter,
