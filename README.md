@@ -1,27 +1,28 @@
 # Data Pipeline Project
 
-Arquitectura modular de procesamiento de datos basada en el patrón **Pipes & Filters**, 
+Arquitectura modular de procesamiento de datos basada en el patrón **Pipes & Filters**,
 diseñada para construir pipelines robustos, configurables y extensibles en Python.
 
 ---
 
 ## Tabla de contenidos
 
-- [Características](#características)
-- [Arquitectura](#arquitectura)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Uso](#uso)
-- [Configuración (pipeline.yaml)](#configuración-pipelineyaml)
-- [Flujo del pipeline](#flujo-del-pipeline)
-- [Sistema de validación](#sistema-de-validación)
-- [Semántica de validación](#semántica-de-validación)
-- [Estado actual del sistema](#estado-actual-del-sistema)
-- [Hoja de ruta](#hoja-de-ruta)
-- [Testing](#testing)
-- [Notas de diseño importantes](#notas-de-diseño-importantes)
-- [Filosofía del proyecto](#filosofía-del-proyecto)
+* [Características](#características)
+* [Arquitectura](#arquitectura)
+* [Estructura del proyecto](#estructura-del-proyecto)
+* [Requisitos](#requisitos)
+* [Instalación](#instalación)
+* [Uso](#uso)
+* [Configuración (pipeline.yaml)](#configuración-pipelineyaml)
+* [Flujo del pipeline](#flujo-del-pipeline)
+* [Sistema de validación](#sistema-de-validación)
+* [Semántica de validación](#semántica-de-validación)
+* [Sistema de tipos y conversiones](#sistema-de-tipos-y-conversiones)
+* [Testing](#testing)
+* [Estado actual del sistema](#estado-actual-del-sistema)
+* [Hoja de ruta](#hoja-de-ruta)
+* [Notas de diseño importantes](#notas-de-diseño-importantes)
+* [Filosofía del proyecto](#filosofía-del-proyecto)
 
 ---
 
@@ -29,67 +30,108 @@ diseñada para construir pipelines robustos, configurables y extensibles en Pyth
 
 ### Implementado
 
-- **Data Sources**
-  - `LoadCSVFilter` (fuente de datos)
-  - `ChunkedCSVFilter` (base para escalabilidad)
+* **Data Sources**
 
-- **Validation System**
-  - `ValidationFilter` (entry point del subsistema de validación)
-  - Reglas disponibles:
-    - `required_columns`
-    - `column_types`
-    - `allowed_values`
-    - `value_range`
-  - Soporte para:
-    - errores vs warnings
-    - estrategias de fallo (`pre`, `post`, `threshold`)
-    - manejo de filas inválidas (drop, separate)
-  - Modelo de resultado consistente:
-    - `is_row_level`
-    - `invalid_rows` siempre lista
+  * `LoadCSVPump`
 
-- **Cleaning**
-  - `CleanDataFilter`
-  - `DeduplicateFilter`
+* **Data Sinks**
 
-- **Type Conversion**
-  - `DataTypeConverterFilter`
-  - Soporte para:
-    - datetime
-    - timedelta con unidad
-    - tipos nullable de pandas
+  * `SaveCSVSink`
 
-- **Data Quality**
-  - `DataQualityMetricsFilter`
+* **Validation System**
 
-- **Persistence**
-  - `SaveCSVFilter`
+  * `ValidationFilter` (entry point del subsistema de validación)
+  * `RuleEngine`
+  * `ValidationReport`
+  * `ValidationResult`
+
+* **Reglas disponibles**
+
+  * `required_columns`
+  * `column_types`
+  * `allowed_values`
+  * `value_range`
+
+* **Soporte de validación**
+
+  * errores vs warnings
+  * estrategias de fallo:
+
+    * `pre`
+    * `post`
+    * `threshold`
+  * manejo de filas inválidas:
+
+    * `keep`
+    * `drop`
+    * `separate`
+  * persistencia opcional de reportes JSON
+  * persistencia opcional de filas inválidas
+  * tracking row-level mediante `invalid_rows`
+
+* **Cleaning**
+
+  * `CleanDataFilter`
+  * `DeduplicateFilter`
+
+* **Filtering**
+
+  * `FilterByDateRange`
+
+* **Type Conversion**
+
+  * `DataTypeConverterFilter`
+  * Soporte para:
+
+    * datetime
+    * timedelta con unidad
+    * tipos nullable de pandas
+    * coerción numérica
+    * boolean nullable
+
+* **Data Quality**
+
+  * `DataQualityMetricsFilter`
+
+* **Configuración global**
+
+  * pandas Copy-on-Write habilitado globalmente
 
 ---
 
 ## Arquitectura
 
-Este proyecto implementa el patrón **Pipes & Filters** con una mejora clave:
+Este proyecto implementa el patrón **Pipes & Filters** con separación explícita de responsabilidades.
 
-### Separación explícita de responsabilidades
+### Componentes principales
 
-| Componente     | Responsabilidad |
-|----------------|----------------|
+| Componente     | Responsabilidad                   |
+| -------------- | --------------------------------- |
 | `DataSource`   | Generar datos (NO recibe entrada) |
-| `DataFilter`   | Transformar datos |
-| `DataPipeline` | Orquestar ejecución |
+| `DataFilter`   | Transformar o validar datos       |
+| `DataSink`     | Persistir datos                   |
+| `DataPipeline` | Orquestar ejecución               |
 
-### Flujo:
+### Flujo
 
+```text
+DataSource → Filter → Filter → ... → DataSink
 ```
-DataSource → Filter → Filter → ... → Output
-```
+
+### Principios arquitectónicos actuales
+
+* separación estricta entre source/filter/sink
+* pipeline declarativo basado en YAML
+* reglas desacopladas del pipeline
+* validación uniforme mediante `RuleEngine`
+* diseño orientado a composición
+* Copy-on-Write habilitado para reducir mutabilidad accidental
 
 ---
 
 ## Estructura del proyecto
 
-```
+```text
 .
 ├── config
 │   └── pipeline.yaml
@@ -101,6 +143,7 @@ DataSource → Filter → Filter → ... → Output
 ├── src
 │   ├── data_pipeline
 │   │   ├── core
+│   │   │   ├── data_sink.py
 │   │   │   ├── data_source.py
 │   │   │   ├── filter_factory.py
 │   │   │   ├── filter.py
@@ -113,11 +156,14 @@ DataSource → Filter → Filter → ... → Output
 │   │   │   ├── data_type_converter.py
 │   │   │   ├── deduplicate.py
 │   │   │   ├── filter_by_date.py
-│   │   │   ├── load_csv_chunks.py
-│   │   │   ├── load_csv.py
-│   │   │   ├── save_csv.py
 │   │   │   └── validation.py
 │   │   ├── __init__.py
+│   │   ├── sinks
+│   │   │   ├── __init__.py
+│   │   │   └── save_csv.py
+│   │   ├── sources
+│   │   │   ├── __init__.py
+│   │   │   └── load_csv.py
 │   │   ├── utils
 │   │   │   └── config_loader.py
 │   │   └── validation
@@ -142,11 +188,15 @@ DataSource → Filter → Filter → ... → Output
 └── tests
     ├── conftest.py
     ├── filters
+    │   ├── sinks
     │   ├── test_clean_data_filter.py
     │   ├── test_data_quality_metrics_filter.py
     │   ├── test_deduplicate_filter.py
     │   ├── test_filter_by_date_filter.py
+    │   └── test_validation_filter.py
+    ├── sinks
     │   └── test_save_csv_filter.py
+    ├── sources
     └── validation
         ├── rules
         │   ├── test_allowed_values_rule.py
@@ -156,18 +206,20 @@ DataSource → Filter → Filter → ... → Output
         ├── test_rule_engine.py
         ├── test_validation_report.py
         └── test_validation_result.py
-
 ```
-> Nota: Las carpetas `schema/` y `business/` son solo una organización lógica.
-> Ambas contienen reglas que implementan el mismo contrato (`ValidationRule`).
+
+> Nota: Las carpetas `schema/` y `business/` son una organización lógica.
+> Todas las reglas implementan el mismo contrato (`ValidationRule`).
+
 ---
 
 ## Requisitos
 
-- Python 3.8+
-- pandas
-- PyYAML
-- pytest
+* Python 3.10+
+* pandas
+* PyYAML
+* pytest
+* pytest-mock
 
 ---
 
@@ -199,25 +251,54 @@ python scripts/run_pipeline.py
 
 ## Configuración (pipeline.yaml)
 
-La pipeline es **declarativa** y se define en YAML:
+La pipeline es declarativa y se define mediante YAML.
 
 ```yaml
 pipeline:
   filters:
-    - name: LoadCSVFilter
+    - name: LoadCSVPump
       params:
-        file_path: data/raw/limited_dataset.csv
+        file_path: data/raw/dataset.csv
 
     - name: DataTypeConverterFilter
       params:
         dtype_mapping:
-          DEP_DELAY: Int16
+          DEP_DELAY:
+            dtype: Int16
+
+          ARRIVAL_TIME:
+            dtype: datetime
+            utc: true
+
+          DURATION:
+            dtype: timedelta
+            unit: minutes
 
     - name: ValidationFilter
       params:
         rules:
           - type: required_columns
             columns: [DEP_DELAY]
+
+          - type: value_range
+            schema:
+              DEP_DELAY:
+                min: 0
+                max: 500
+
+        fail_on:
+          error:
+            strategy: threshold
+            threshold: 0.10
+
+        row_actions:
+          error: separate
+
+        invalid_rows_path: data/invalid
+
+    - name: SaveCSVSink
+      params:
+        output_path: data/output/clean.csv
 ```
 
 ---
@@ -225,67 +306,72 @@ pipeline:
 ## Flujo del pipeline
 
 1. **Data Source**
-   - Carga datos desde origen (CSV, DB, etc.)
+
+   * carga datos desde CSV
 
 2. **Transformaciones**
-   - limpieza
-   - conversión de tipos
-   - filtros
+
+   * limpieza
+   * deduplicación
+   * conversión de tipos
+   * filtros temporales
 
 3. **Validación**
-   - reglas estructurales (dataset-level)
-   - reglas semánticas (row-level)
 
-4. **Salida**
-   - persistencia
-   - métricas
+   * reglas estructurales (dataset-level)
+   * reglas semánticas (row-level)
+
+4. **Persistencia**
+
+   * exportación CSV
+   * reportes de validación
+   * persistencia de filas inválidas
 
 ---
 
 ## Sistema de validación
 
-### Unificación del sistema de validación
+### Unificación del sistema
 
-El sistema NO distingue entre validación de esquema y validación de negocio a nivel de ejecución.
+El sistema NO distingue entre validación estructural y validación de negocio a nivel de ejecución.
 
 Todas las reglas:
 
-- implementan `ValidationRule`
-- se ejecutan a través de `RuleEngine`
-- devuelven `ValidationResult`
+* implementan `ValidationRule`
+* son ejecutadas por `RuleEngine`
+* producen `ValidationResult`
 
-La distinción entre reglas (estructurales vs negocio) es únicamente organizacional, no arquitectónica.
+La separación entre reglas estructurales y de negocio es únicamente organizacional.
 
 ### Punto de entrada
 
-El sistema de validación es ejecutado a través de un único filtro:
+El subsistema de validación se integra al pipeline mediante:
 
-- `ValidationFilter`
+* `ValidationFilter`
 
-Este filtro actúa como punto de contacto entre el pipeline y el subsistema de validación.
+Este filtro:
 
-No existe distinción a nivel de ejecución entre:
-
-- validación de esquema
-- validación de negocio
-
-Ambos tipos de reglas son procesados de forma uniforme.
+* ejecuta reglas
+* genera reportes
+* maneja estrategias de fallo
+* aplica acciones row-level
+* puede persistir filas inválidas
 
 ### Componentes
 
-- `RuleEngine`
-- `ValidationRule`
-- `ValidationResult`
-- `ValidationReport`
+| Componente         | Responsabilidad      |
+| ------------------ | -------------------- |
+| `RuleEngine`       | Ejecutar reglas      |
+| `ValidationRule`   | Contrato base        |
+| `ValidationResult` | Resultado individual |
+| `ValidationReport` | Resultado agregado   |
 
 ### Tipos de reglas
 
-El sistema distingue explícitamente entre dos tipos de reglas:
-
-| Tipo            | Ejemplo              | is_row_level | invalid_rows |
-|-----------------|---------------------|-------------|--------------|
-| estructural     | required_columns    | False        | []           |
-| semántica       | value_range         | True         | [indices]    |
+| Tipo        | Ejemplo          | is_row_level | invalid_rows |
+| ----------- | ---------------- | ------------ | ------------ |
+| estructural | required_columns | False        | []           |
+| semántica   | value_range      | True         | [indices]    |
 
 ---
 
@@ -293,101 +379,97 @@ El sistema distingue explícitamente entre dos tipos de reglas:
 
 Cada regla devuelve un objeto con semántica explícita:
 
-- `is_row_level`
-  - Indica si la regla opera a nivel fila
-- `invalid_rows`
-  - Siempre es una lista (nunca `None`)
-  - Solo tiene valores si `is_row_level = True`
+* `is_row_level`
 
-Esto elimina ambigüedad y permite un manejo consistente en todo el sistema.
+  * indica si la regla opera a nivel fila
 
-### Capacidades
+* `invalid_rows`
 
-- errores vs warnings
-- row-level tracking (`invalid_rows`)
-- diferenciación explícita entre reglas estructurales y row-level
-- fail strategies:
-  - `pre`
-  - `post`
-  - `threshold`
+  * siempre es una lista
+  * nunca `None`
+  * solo contiene valores si `is_row_level=True`
+
+Esto elimina ambigüedad y permite un manejo uniforme dentro del engine.
+
+---
+
+### Estrategias de fallo
+
+| Estrategia  | Descripción                                 |
+| ----------- | ------------------------------------------- |
+| `pre`       | falla antes de aplicar acciones row-level   |
+| `post`      | falla después de aplicar acciones row-level |
+| `threshold` | falla si el ratio inválido excede el umbral |
+
+---
+
+### Row actions
+
+| Acción     | Descripción                                 |
+| ---------- | ------------------------------------------- |
+| `keep`     | conserva filas inválidas                    |
+| `drop`     | elimina filas inválidas                     |
+| `separate` | exporta filas inválidas y luego las elimina |
 
 ---
 
 ## Semántica de validación
 
-El sistema separa explícitamente dos niveles de validación:
+El sistema separa explícitamente dos niveles de validación.
 
 ### 1. Dataset-level (estructural)
-- Validan la estructura del DataFrame
-- Ejemplos:
-  - columnas requeridas
-  - tipos de datos
-- No operan sobre filas individuales
+
+Validan estructura global del DataFrame.
+
+Ejemplos:
+
+* columnas requeridas
+* tipos de datos
+
+Características:
+
+* no operan por fila
+* no generan `invalid_rows`
+* afectan el estado global del dataset
 
 ### 2. Row-level (semántica)
-- Validan valores dentro de las filas
-- Ejemplos:
-  - rangos numéricos
-  - valores permitidos
-- Permiten:
-  - drop de filas
-  - separación de registros inválidos
+
+Validan valores dentro de las filas.
+
+Ejemplos:
+
+* rangos numéricos
+* valores permitidos
+
+Características:
+
+* identifican filas inválidas
+* permiten `drop` y `separate`
+* habilitan estrategias `threshold`
 
 ---
 
-### Implicación clave
+## Sistema de tipos y conversiones
 
-Solo las reglas **row-level** afectan:
+`DataTypeConverterFilter` soporta:
 
-- `invalid_rows`
-- acciones como `drop` o `separate`
-- estrategias `threshold`
+| Tipo              | Soporte                           |
+| ----------------- | --------------------------------- |
+| integers nullable | `Int8`, `Int16`, `Int32`, `Int64` |
+| floats nullable   | `Float32`, `Float64`              |
+| string            | `string`                          |
+| boolean nullable  | `boolean`                         |
+| datetime          | `datetime`                        |
+| timedelta         | `timedelta` + `unit`              |
 
-Las reglas estructurales solo afectan el estado global de validación.
+### Unidades soportadas para timedelta
 
-## Estado actual del sistema
-
-### Estable
-
-- Pipeline core
-- Configuración YAML
-- Sistema de validación base
-- Type conversion
-
-### Parcial
-
-- Cleaning avanzado
-- Deduplicación
-- Data quality metrics
-
-### Pendiente
-
-- Enrichment
-- Aggregation
-- Persistencia avanzada
-- Streaming real
-
----
-
-## Hoja de ruta
-
-### Próximos módulos
-
-- Feature Engineering
-- Enrichment (joins externos)
-- Aggregation
-- Persistencia en Parquet / DB
-
-### Validación avanzada
-
-- integridad referencial
-- reglas cross-column
-- reglas dependientes
-
-### Escalabilidad
-
-- soporte real para chunking
-- streaming pipeline
+| Unidad  | Alias |
+| ------- | ----- |
+| seconds | `s`   |
+| minutes | `m`   |
+| hours   | `h`   |
+| days    | `d`   |
 
 ---
 
@@ -396,8 +478,8 @@ Las reglas estructurales solo afectan el estado global de validación.
 Ejecutar tests:
 
 ```bash
-# Instalar pytest si no está instalado
-pip install pytest pytest-mock
+# Instalar dependencias de testing
+pip install pytest pytest-mock pytest-cov
 
 # Ejecutar todos los tests
 pytest tests/
@@ -405,39 +487,107 @@ pytest tests/
 # Ejecutar con cobertura
 pytest tests/ --cov=src/data_pipeline --cov-report=html
 
-# Ejecutar categoría específica
+# Ejecutar módulos específicos
 pytest tests/validation/
 pytest tests/filters/
+pytest tests/sinks/
 
 # Ejecutar con verbose
 pytest tests/ -v
 
-# Ejecutar un test específico
+# Ejecutar test específico
 pytest tests/validation/test_validation_result.py::TestValidationResult::test_creation_valid_result
-
 ```
 
 ### Cobertura actual
 
-- filtros básicos
+Incluye tests para:
+
+* filtros
+* sinks
+* validation engine
+* validation rules
+* validation report
+* validation result
+* estrategias de fallo
+* row actions
+* persistencia de reportes
+
+---
+
+## Estado actual del sistema
+
+### Estable
+
+* pipeline core
+* validation engine
+* validation rules
+* type conversion
+* CSV source/sink
+* filtros básicos
+* Copy-on-Write global
+* testing base
+
+### Parcial
+
+* cleaning avanzado
+* métricas avanzadas de calidad
+* agregaciones
 
 ### Pendiente
 
-- validation engine
-- rules
-- pipeline end-to-end
+* enrichment
+* aggregation real
+* persistencia avanzada
+* streaming real
+* chunk processing real
+* sinks adicionales
+
+---
+
+## Hoja de ruta
+
+### Próximos módulos
+
+* Feature Engineering
+* Enrichment
+* Aggregation
+* Persistencia en Parquet
+* Persistencia en bases de datos
+
+### Validación avanzada
+
+* integridad referencial
+* reglas cross-column
+* reglas dependientes
+* reglas dinámicas
+
+### Escalabilidad
+
+* chunk processing real
+* streaming pipeline
+* procesamiento distribuido
 
 ---
 
 ## Notas de diseño importantes
 
-- El primer componente **NO es un filtro**, es un `DataSource`
-- Todas las reglas devuelven `invalid_rows`, pero:
-  - reglas estructurales → siempre `[]`
-  - reglas row-level → lista de índices inválidos
-- El flag `is_row_level` define cómo debe interpretarse el resultado
-- Los filtros trabajan sobre `pandas.DataFrame`
-- El sistema es **config-driven** (YAML)
+* El primer componente NO es un filtro, es un `DataSource`
+* El último componente puede ser un `DataSink`
+* Todas las reglas devuelven `invalid_rows`, pero:
+
+  * reglas estructurales → siempre `[]`
+  * reglas row-level → índices inválidos
+* `is_row_level` define cómo interpretar el resultado
+* Los filtros trabajan sobre `pandas.DataFrame`
+* El sistema es config-driven (YAML)
+* Copy-on-Write se habilita globalmente desde:
+
+```python
+pd.options.mode.copy_on_write = True
+```
+
+* Los filtros que transforman datos deben trabajar sobre copias explícitas cuando exista mutación
 
 ---
 
@@ -445,10 +595,12 @@ pytest tests/validation/test_validation_result.py::TestValidationResult::test_cr
 
 Este proyecto busca evolucionar hacia:
 
-- un **framework de pipelines**
-- altamente configurable
-- extensible
-- con validación robusta
-- y separación clara de responsabilidades
+* un framework de pipelines
+* altamente configurable
+* extensible
+* con validación robusta
+* desacoplado
+* orientado a composición
+* con separación clara de responsabilidades
 
 ---

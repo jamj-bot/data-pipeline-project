@@ -1,3 +1,3 @@
-from .load_csv import LoadCSVFilter
+from .load_csv import LoadCSVPump
 
-__all__ = ["LoadCSVFilter"]
+__all__ = ["LoadCSVPump"]
