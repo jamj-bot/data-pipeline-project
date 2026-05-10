@@ -8,6 +8,34 @@ from data_pipeline.filters.validation import ValidationFilter
 
 class TestValidationFilter:
 
+    def test_validation_filter_does_not_mutate_input(self):
+        df = pd.DataFrame({
+            "status": ["OK", "INVALID"]
+        })
+
+        original = df.copy(deep=True)
+
+        filter_ = ValidationFilter(
+            rules=[
+                {
+                    "type": "allowed_values",
+                    "schema": {
+                        "status": ["OK"]
+                    }
+                }
+            ],
+            row_actions={
+                "error": "drop"
+            },
+            fail_on={
+                "error": False
+            }
+        )
+
+        filter_.process(df)
+
+        assert df.equals(original)
+
     def test_pass_through_when_valid(self, sample_df):
         rules = [
             {"type": "required_columns", "columns": ["id", "name"]}
@@ -48,7 +76,7 @@ class TestValidationFilter:
         with pytest.raises(ValueError):
             filter_.process(sample_df)
 
-    def test_row_action_drop_error(self):
+    def test_validation_filter_drops_invalid_rows_on_error(self):
         df = pd.DataFrame({"age": [10, 50]})
 
         rules = [
@@ -68,7 +96,7 @@ class TestValidationFilter:
 
         assert len(result) == 0
 
-    def test_row_action_keep_default(self):
+    def test_validation_filter_keeps_invalid_rows_by_default(self):
         df = pd.DataFrame({"age": [10, 50]})
 
         rules = [
@@ -87,7 +115,7 @@ class TestValidationFilter:
 
         assert len(result) == 2
 
-    def test_row_action_separate(self, tmp_path):
+    def test_validation_filter_separates_invalid_rows(self, tmp_path):
         df = pd.DataFrame({"age": [10, 50]})
 
         rules = [
@@ -113,7 +141,7 @@ class TestValidationFilter:
         
         assert result.empty
     
-    def test_report_file_created(self, sample_df, tmp_path):
+    def test_validation_filter_creates_report_file(self, sample_df, tmp_path):
         rules = [
             {"type": "required_columns", "columns": ["id"]}
         ]
@@ -134,7 +162,7 @@ class TestValidationFilter:
 
         assert "summary" in data
 
-    def test_fail_on_threshold(self):
+    def test_validation_filter_fails_when_threshold_is_exceeded(self):
         df = pd.DataFrame({"age": [10, 50, 60, 70]})
 
         rules = [
@@ -152,7 +180,7 @@ class TestValidationFilter:
         with pytest.raises(ValueError):
             filter_.process(df)
 
-    def test_no_fail_when_below_threshold(self):
+    def test_validation_filter_does_not_fail_when_threshold_is_not_exceeded(self):
         df = pd.DataFrame({"age": [10, 20, 30, 40]})
 
         rules = [
@@ -171,7 +199,7 @@ class TestValidationFilter:
 
         assert len(result) == 4
 
-    def test_fail_post_strategy(self):
+    def test_validation_filter_applies_post_fail_strategy(self):
         df = pd.DataFrame({"age": [10, 50]})
 
         rules = [
@@ -190,7 +218,7 @@ class TestValidationFilter:
         result = filter_.process(df)
         assert result.empty
 
-    def test_empty_dataframe(self):
+    def test_validation_filter_handles_empty_dataframe(self):
         df = pd.DataFrame()
 
         rules = [
