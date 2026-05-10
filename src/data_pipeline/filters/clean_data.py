@@ -11,4 +11,6 @@ class CleanDataFilter(DataFilter):
         if data is None:
             raise ValueError("CleanDataFilter requiere un DataFrame de Entrada.")
 
-        return data.dropna(how="all")
+        df = data.copy()
+
+        return df.dropna(how="all")

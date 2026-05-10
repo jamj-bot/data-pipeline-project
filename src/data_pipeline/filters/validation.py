@@ -115,9 +115,11 @@ class ValidationFilter(DataFilter):
 
     def process(self, data: pd.DataFrame) -> pd.DataFrame:
 
-        total_rows = len(data)
+        df = data.copy()
 
-        report = self._engine.run(data)
+        total_rows = len(df)
+
+        report = self._engine.run(df)
 
         summary = report.summary()
         self._logger.info(f"Validation summary: {summary}")
@@ -145,22 +147,22 @@ class ValidationFilter(DataFilter):
 
         if error_rows:
             if self._on_error_action == "drop":
-                data = self._drop_rows(data, error_rows)
+                df = self._drop_rows(df, error_rows)
             elif self._on_error_action == "separate":
-                self._persist_invalid_rows(data, error_rows, "error")
-                data = self._drop_rows(data, error_rows)
+                self._persist_invalid_rows(df, error_rows, "error")
+                df = self._drop_rows(df, error_rows)
 
         if warning_rows:
             if self._on_warning_action == "drop":
-                data = self._drop_rows(data, warning_rows)
+                df = self._drop_rows(df, warning_rows)
             elif self._on_warning_action == "separate":
-                self._persist_invalid_rows(data, warning_rows, "warning")
-                data = self._drop_rows(data, warning_rows)
+                self._persist_invalid_rows(df, warning_rows, "warning")
+                df = self._drop_rows(df, warning_rows)
 
-        if self._should_fail_post(data, "warning"):
+        if self._should_fail_post(df, "warning"):
             raise ValueError("Validation failed (post warning)")
 
-        if self._should_fail_post(data, "error"):
+        if self._should_fail_post(df, "error"):
             raise ValueError("Validation failed (post error)")
 
         if self._should_fail_threshold(total_rows, error_rows, "error"):
@@ -169,4 +171,4 @@ class ValidationFilter(DataFilter):
         if self._should_fail_threshold(total_rows, warning_rows, "warning"):
             raise ValueError("Validation failed (threshold warning)")
 
-        return data
+        return df
