@@ -11,4 +11,7 @@ class DeduplicateFilter(DataFilter):
         if data is None:
             raise ValueError("DeduplicateFilter requiere un DataFrame de Entrada.")
 
-        return data.drop_duplicates()
+
+        df = data.copy()
+
+        return df.drop_duplicates()

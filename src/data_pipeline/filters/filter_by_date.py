@@ -27,4 +27,4 @@ class FilterByDateRange(DataFilter):
 
         mask = (df[self._field_date] >= self._start_date) & (df[self._field_date] <= self._end_date)
 
-        return df.loc[mask]
+        return df.loc[mask].copy()

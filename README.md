@@ -581,6 +581,12 @@ Incluye tests para:
 * `is_row_level` define cómo interpretar el resultado
 * Los filtros trabajan sobre `pandas.DataFrame`
 * El sistema es config-driven (YAML)
+* Ownership semantics:
+
+  * el DataFrame de entrada es caller-owned
+  * los filters NO deben mutar el DataFrame recibido
+  * toda operación de escritura debe trabajar sobre copias defensivas
+  * `inplace=True` está prohibido arquitectónicamente
 * Copy-on-Write se habilita globalmente desde:
 
 ```python
